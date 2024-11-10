@@ -13,10 +13,11 @@ new p5(p => {
     rows: 0,
     cellSize: 15
   }
+  const fillChar = ' '
+  let monospaceFont = null
 
   p.preload = function () {
-    // Load a monospace font
-    p.font = p.loadFont('./saxmono.ttf')
+    monospaceFont = p.loadFont('saxmono.ttf')
   }
 
   p.setup = () => {
@@ -24,12 +25,12 @@ new p5(p => {
     // Calculate grid dimensions based on canvas size
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
+    p.textFont(monospaceFont)
     p.noStroke()
     setGradient()
 
     p.textSize(grid.cellSize + 4) // this works for 15, but is not a good rubric for other sizes
     p.textAlign(p.LEFT, p.TOP)
-    p.textFont(p.font)
 
     setupTextAreas(textAreas, grid.cellSize)
 
@@ -38,11 +39,13 @@ new p5(p => {
 
   function setupTextAreas (textAreas, gridSize) {
     for (let i = 0; i < 6; i++) {
-      let lines = textBlocks[Math.floor(Math.random() * textBlocks.length)].split('\n')
+      let lines = textBlocks[Math.floor(Math.random() * textBlocks.length)]
+        .replace(/ /g, fillChar)
+        .split('\n')
       textAreas.push({
         lines: lines,
-        x: Math.floor(Math.random() * grid.cols),
-        y: Math.floor(Math.random() * grid.rows),
+        x: Math.floor((Math.random() * grid.cols) / 2),
+        y: Math.floor((Math.random() * grid.rows) / 2),
         w: Math.max(...lines.map(line => line.length)),
         h: lines.length
       })
@@ -56,7 +59,6 @@ new p5(p => {
   }
 
   function drawGradient () {
-    // Apply the gradient to the canvas
     p.drawingContext.fillStyle = gradient
     p.drawingContext.fillRect(0, 0, p.width, p.height)
   }
@@ -76,38 +78,37 @@ new p5(p => {
     }
     p.fill(0)
 
-    const fillChar = '.'
-
     // Create 2D array filled with dots
     const charGrid = Array(grid.rows)
       .fill()
       .map(() => Array(grid.cols).fill(fillChar))
 
-    // Calculate offset to normalize to [0,0]
-    const offsetX = -Math.min(...textAreas.map(area => area.x))
-    const offsetY = -Math.min(...textAreas.map(area => area.y))
+    const withinGrid = (area, i, j) => {
+      return (
+        area.y + i >= 0 &&
+        area.y + i < grid.rows &&
+        area.x + j >= 0 &&
+        area.x + j < grid.cols
+      )
+    }
 
     // First pass: populate the normalized grid with text areas
     for (let area of textAreas) {
-      const normalizedX = area.x + offsetX
-      const normalizedY = area.y + offsetY
-
       for (let i = 0; i < area.lines.length; i++) {
         const line = area.lines[i]
         for (let j = 0; j < line.length; j++) {
           if (line[j] === fillChar) continue
 
           try {
-            if (normalizedY + i < grid.rows && normalizedX + j < grid.cols) {
-              if (charGrid[normalizedY + i][normalizedX + j] === fillChar) {
-                charGrid[normalizedY + i][normalizedX + j] = line[j]
-              }
+            if (
+              withinGrid(area, i, j) &&
+              charGrid[area.y + i][area.x + j] === fillChar
+            ) {
+              charGrid[area.y + i][area.x + j] = line[j]
             }
           } catch (error) {
             console.error(error)
-            console.error(
-              `Error at position (${normalizedX + j}, ${normalizedY + i})`
-            )
+            console.error(`Error at position (${area.x + j}, ${area.y + i})`)
           }
         }
       }
