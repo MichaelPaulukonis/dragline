@@ -17,14 +17,13 @@ new p5(p => {
 
   p.setup = () => {
     p.createCanvas(p.windowWidth, p.windowHeight)
-
+    p.noStroke()
     setGradient()
 
-    p.textSize(gridSize + 4) // this works, but is not a good rubric for other sizes
+    p.textSize(gridSize + 4) // this works for 15, but is not a good rubric for other sizes
     p.textAlign(p.LEFT, p.TOP)
-    p.textFont(p.font) // Set the font to the loaded monospace font
+    p.textFont(p.font)
 
-    // Select 3 random text blocks
     let selectedTextBlocks = []
     while (selectedTextBlocks.length < 6) {
       let randomIndex = Math.floor(Math.random() * textBlocks.length)
@@ -60,6 +59,17 @@ new p5(p => {
 
   const display = () => {
     drawGradient()
+    // if dragging, highlight area of index
+    if (dragging) {
+      p.fill(255, 255, 255, 100)
+      p.rect(
+        textAreas[dragIndex].x,
+        textAreas[dragIndex].y,
+        textAreas[dragIndex].w,
+        textAreas[dragIndex].h
+      )
+    }
+    p.fill(0)
 
     // First, find the bounds of all text areas to normalize coordinates
     let minX = Infinity
@@ -81,13 +91,15 @@ new p5(p => {
     }
 
     // Calculate grid dimensions
-    const gridWidth = maxX - minX + 1
-    const gridHeight = maxY - minY + 1
+    const gridWidth = Math.floor(p.width / gridSize)
+    const gridHeight = Math.floor(p.height / gridSize)
+
+    const fillChar = '.'
 
     // Create 2D array filled with empty spaces
     const charGrid = Array(gridHeight)
       .fill()
-      .map(() => Array(gridWidth).fill(' '))
+      .map(() => Array(gridWidth).fill(fillChar))
 
     // Calculate offset to normalize to [0,0]
     const offsetX = -minX
@@ -101,11 +113,30 @@ new p5(p => {
       for (let i = 0; i < area.lines.length; i++) {
         const line = area.lines[i]
         for (let j = 0; j < line.length; j++) {
-          if (line[j] === ' ') continue
+          if (line[j] === fillChar) continue
 
-          // Only write to grid if position is empty (space character)
-          if (charGrid[normalizedY + i][normalizedX + j] === ' ') {
-            charGrid[normalizedY + i][normalizedX + j] = line[j]
+          // Only write to grid if position is empty (fillChar)
+          try {
+            if (normalizedY + i < gridHeight && normalizedX + j < gridWidth) {
+              if (charGrid[normalizedY + i][normalizedX + j] === fillChar) {
+                charGrid[normalizedY + i][normalizedX + j] = line[j]
+              }
+            }
+          } catch (error) {
+            console.error(error)
+            console.error(
+              `Error at position (${normalizedX + j}, ${normalizedY + i})`
+            )
+            // console.error(`Grid dimensions: ${gridWidth}x${gridHeight}`)
+            // console.error(`Line: ${line}`)
+            // console.error(`CharGrid length: ${charGrid.length}`)
+            // console.error(
+            //   `CharGrid[${normalizedY + i}]: ${
+            //     charGrid[normalizedY + i]
+            //       ? charGrid[normalizedY + i].length
+            //       : 'undefined'
+            //   }`
+            // )
           }
         }
       }
@@ -114,12 +145,12 @@ new p5(p => {
     // Second pass: render the grid
     for (let y = 0; y < charGrid.length; y++) {
       for (let x = 0; x < charGrid[y].length; x++) {
-        if (charGrid[y][x] !== ' ') {
-          // Convert normalized grid coordinates back to canvas coordinates
-          const canvasX = (x - offsetX) * gridSize
-          const canvasY = (y - offsetY) * gridSize
-          p.text(charGrid[y][x], canvasX, canvasY)
-        }
+        // if (charGrid[y][x] !== fillChar) {
+        // Convert normalized grid coordinates back to canvas coordinates
+        const canvasX = (x - offsetX) * gridSize
+        const canvasY = (y - offsetY) * gridSize
+        p.text(charGrid[y][x], canvasX, canvasY)
+        // }
       }
     }
   }
@@ -157,7 +188,8 @@ new p5(p => {
 
   p.mouseReleased = () => {
     dragging = false
-    dragIndex = -1
+    // dragIndex = -1
+    display() // Redraw the grid to remove the highlight
   }
 
   function getRandomGridPosition (max) {
@@ -167,5 +199,38 @@ new p5(p => {
   p.windowResized = () => {
     p.resizeCanvas(p.windowWidth, p.windowHeight)
     setGradient() // Recreate the gradient when the window is resized
+  }
+
+  p.keyPressed = () => {
+    // Only handle key events if we're currently dragging a text area
+    if (!dragging || dragIndex === -1) return
+
+    // NOTE: down increases / up decreases
+    // because lower text index has priority in display
+    if (p.keyCode === p.DOWN_ARROW) {
+      // Move the text area up in the array (if not already at the top)
+      if (dragIndex < textAreas.length - 1) {
+        // Swap the current text area with the one above it
+        ;[textAreas[dragIndex], textAreas[dragIndex + 1]] = [
+          textAreas[dragIndex + 1],
+          textAreas[dragIndex]
+        ]
+        // Update dragIndex to follow the moved text area
+        dragIndex++
+        display() // Redraw to show the new order
+      }
+    } else if (p.keyCode === p.UP_ARROW) {
+      // Move the text area down in the array (if not already at the bottom)
+      if (dragIndex > 0) {
+        // Swap the current text area with the one below it
+        ;[textAreas[dragIndex], textAreas[dragIndex - 1]] = [
+          textAreas[dragIndex - 1],
+          textAreas[dragIndex]
+        ]
+        // Update dragIndex to follow the moved text area
+        dragIndex--
+        display() // Redraw to show the new order
+      }
+    }
   }
 })
