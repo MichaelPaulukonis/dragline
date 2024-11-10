@@ -8,7 +8,7 @@ new p5(p => {
   let dragIndex = -1
   let offsetX, offsetY
   let gradient
-  const gridSize = 15
+  const cellSize = 15
 
   p.preload = function () {
     // Load a monospace font
@@ -20,10 +20,16 @@ new p5(p => {
     p.noStroke()
     setGradient()
 
-    p.textSize(gridSize + 4) // this works for 15, but is not a good rubric for other sizes
+    p.textSize(cellSize + 4) // this works for 15, but is not a good rubric for other sizes
     p.textAlign(p.LEFT, p.TOP)
     p.textFont(p.font)
 
+    setupTextAreas(textAreas, cellSize)
+
+    display()
+  }
+
+  function setupTextAreas (textAreas, gridSize) {
     let selectedTextBlocks = []
     while (selectedTextBlocks.length < 6) {
       let randomIndex = Math.floor(Math.random() * textBlocks.length)
@@ -35,14 +41,14 @@ new p5(p => {
       let lines = text.split('\n')
       textAreas.push({
         lines: lines,
+        // TODO: use grid positions, not full-canvas x/y
         x: getRandomGridPosition(p.width / 2),
         y: getRandomGridPosition(p.height / 2),
+        // use letter/grid count for w/h
         w: Math.max(...lines.map(line => line.length)) * gridSize,
         h: lines.length * gridSize
       })
     }
-
-    display()
   }
 
   const setGradient = () => {
@@ -59,6 +65,7 @@ new p5(p => {
 
   const display = () => {
     drawGradient()
+
     // if dragging, highlight area of index
     if (dragging) {
       p.fill(255, 255, 255, 100)
@@ -71,51 +78,35 @@ new p5(p => {
     }
     p.fill(0)
 
-    // First, find the bounds of all text areas to normalize coordinates
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-
-    for (let area of textAreas) {
-      minX = Math.min(minX, Math.floor(area.x / gridSize))
-      minY = Math.min(minY, Math.floor(area.y / gridSize))
-      maxX = Math.max(
-        maxX,
-        Math.floor((area.x + area.lines[0].length * gridSize) / gridSize)
-      )
-      maxY = Math.max(
-        maxY,
-        Math.floor((area.y + area.lines.length * gridSize) / gridSize)
-      )
-    }
-
-    // Calculate grid dimensions
-    const gridWidth = Math.floor(p.width / gridSize)
-    const gridHeight = Math.floor(p.height / gridSize)
+    // Calculate grid dimensions based on canvas size
+    const gridWidth = Math.floor(p.width / cellSize)
+    const gridHeight = Math.floor(p.height / cellSize)
 
     const fillChar = '.'
 
-    // Create 2D array filled with empty spaces
+    // Create 2D array filled with dots
     const charGrid = Array(gridHeight)
       .fill()
       .map(() => Array(gridWidth).fill(fillChar))
 
     // Calculate offset to normalize to [0,0]
-    const offsetX = -minX
-    const offsetY = -minY
+    const offsetX = -Math.min(
+      ...textAreas.map(area => Math.floor(area.x / cellSize))
+    )
+    const offsetY = -Math.min(
+      ...textAreas.map(area => Math.floor(area.y / cellSize))
+    )
 
-    // First pass: populate the normalized grid
+    // First pass: populate the normalized grid with text areas
     for (let area of textAreas) {
-      const normalizedX = Math.floor(area.x / gridSize) + offsetX
-      const normalizedY = Math.floor(area.y / gridSize) + offsetY
+      const normalizedX = Math.floor(area.x / cellSize) + offsetX
+      const normalizedY = Math.floor(area.y / cellSize) + offsetY
 
       for (let i = 0; i < area.lines.length; i++) {
         const line = area.lines[i]
         for (let j = 0; j < line.length; j++) {
           if (line[j] === fillChar) continue
 
-          // Only write to grid if position is empty (fillChar)
           try {
             if (normalizedY + i < gridHeight && normalizedX + j < gridWidth) {
               if (charGrid[normalizedY + i][normalizedX + j] === fillChar) {
@@ -127,30 +118,17 @@ new p5(p => {
             console.error(
               `Error at position (${normalizedX + j}, ${normalizedY + i})`
             )
-            // console.error(`Grid dimensions: ${gridWidth}x${gridHeight}`)
-            // console.error(`Line: ${line}`)
-            // console.error(`CharGrid length: ${charGrid.length}`)
-            // console.error(
-            //   `CharGrid[${normalizedY + i}]: ${
-            //     charGrid[normalizedY + i]
-            //       ? charGrid[normalizedY + i].length
-            //       : 'undefined'
-            //   }`
-            // )
           }
         }
       }
     }
 
-    // Second pass: render the grid
+    // Second pass: render the grid - simply multiply grid coordinates by gridSize
     for (let y = 0; y < charGrid.length; y++) {
       for (let x = 0; x < charGrid[y].length; x++) {
-        // if (charGrid[y][x] !== fillChar) {
-        // Convert normalized grid coordinates back to canvas coordinates
-        const canvasX = (x - offsetX) * gridSize
-        const canvasY = (y - offsetY) * gridSize
+        const canvasX = x * cellSize
+        const canvasY = y * cellSize
         p.text(charGrid[y][x], canvasX, canvasY)
-        // }
       }
     }
   }
@@ -181,8 +159,8 @@ new p5(p => {
   p.mouseDragged = () => {
     if (dragging) {
       let area = textAreas[dragIndex]
-      area.x = Math.round((p.mouseX - offsetX) / gridSize) * gridSize
-      area.y = Math.round((p.mouseY - offsetY) / gridSize) * gridSize
+      area.x = Math.round((p.mouseX - offsetX) / cellSize) * cellSize
+      area.y = Math.round((p.mouseY - offsetY) / cellSize) * cellSize
     }
   }
 
@@ -193,7 +171,7 @@ new p5(p => {
   }
 
   function getRandomGridPosition (max) {
-    return Math.floor(Math.random() * (max / gridSize)) * gridSize
+    return Math.floor(Math.random() * (max / cellSize)) * cellSize
   }
 
   p.windowResized = () => {
