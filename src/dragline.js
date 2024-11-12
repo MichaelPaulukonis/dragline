@@ -1,11 +1,11 @@
 import '../css/style.css'
 await import('p5js-wrapper')
-import { textBlocks } from './textblocks.js'
+const blocks = await import('./blocks')
 
 new p5(p => {
   let textAreas = []
   let dragging = false
-  let dragIndex = -1
+  let selectedIndex = -1
   let offsetX, offsetY
   let gradient
   let grid = {
@@ -32,16 +32,16 @@ new p5(p => {
     p.textSize(grid.cellSize + 4) // this works for 15, but is not a good rubric for other sizes
     p.textAlign(p.LEFT, p.TOP)
 
-    setupTextAreas(textAreas, grid.cellSize)
+    setupTextAreas(textAreas)
 
     display()
   }
 
-  function setupTextAreas (textAreas, gridSize) {
-    for (let i = 0; i < 6; i++) {
-      let lines = textBlocks[Math.floor(Math.random() * textBlocks.length)]
-        .replace(/ /g, fillChar)
-        .split('\n')
+  function setupTextAreas (textAreas) {
+    for (let i = 0; i < 10; i++) {
+      let lines = blocks.default[Math.floor(Math.random() * blocks.default.length)].map(line =>
+        line.replace(/ /g, fillChar)
+      )
       textAreas.push({
         lines: lines,
         x: Math.floor((Math.random() * grid.cols) / 2),
@@ -67,14 +67,30 @@ new p5(p => {
     drawGradient()
 
     if (dragging) {
-      p.fill(255, 255, 255, 100)
-      // Convert grid coordinates to pixels for highlight rectangle
+      // Create a color variation based on selectedIndex
+      // const hue = (selectedIndex * 60) % 360;  // Rotate through hues (0-360)
+      const minHue = 240;   // yellow
+      const maxHue = 60;  // blue
+      const hueRange = maxHue - minHue;
+      const hue = maxHue - ((selectedIndex * (hueRange / textAreas.length)) % hueRange);
+      
+      const saturation = 50;  // Keep moderate saturation
+      const brightness = 100; // Keep full brightness
+      const alpha = 100;      // Keep same transparency
+    
+      p.colorMode(p.HSB);  // Switch to HSB color mode
+      p.fill(hue, saturation, brightness, alpha);
+      
+      // Draw the highlight rectangle
       p.rect(
-        textAreas[dragIndex].x * grid.cellSize,
-        textAreas[dragIndex].y * grid.cellSize,
-        textAreas[dragIndex].w * grid.cellSize,
-        textAreas[dragIndex].h * grid.cellSize
-      )
+        textAreas[selectedIndex].x * grid.cellSize,
+        textAreas[selectedIndex].y * grid.cellSize,
+        textAreas[selectedIndex].w * grid.cellSize,
+        textAreas[selectedIndex].h * grid.cellSize
+      );
+      
+      p.colorMode(p.RGB);  // Switch back to RGB mode
+      p.fill(0);  // Reset fill to black for text
     }
     p.fill(0)
 
@@ -145,7 +161,7 @@ new p5(p => {
         p.mouseY < pixelY + pixelH
       ) {
         dragging = true
-        dragIndex = i
+        selectedIndex = i
         offsetX = p.mouseX - pixelX
         offsetY = p.mouseY - pixelY
         break
@@ -155,7 +171,7 @@ new p5(p => {
 
   p.mouseDragged = () => {
     if (dragging) {
-      let area = textAreas[dragIndex]
+      let area = textAreas[selectedIndex]
       // Convert mouse position to grid coordinates directly
       area.x = Math.floor((p.mouseX - offsetX) / grid.cellSize)
       area.y = Math.floor((p.mouseY - offsetY) / grid.cellSize)
@@ -164,7 +180,7 @@ new p5(p => {
 
   p.mouseReleased = () => {
     dragging = false
-    // dragIndex = -1
+    // selectedIndex = -1
     display() // Redraw the grid to remove the highlight
   }
 
@@ -179,32 +195,32 @@ new p5(p => {
 
   p.keyPressed = () => {
     // Only handle key events if we're currently dragging a text area
-    if (!dragging || dragIndex === -1) return
+    if (!dragging || selectedIndex === -1) return
 
     // NOTE: down increases / up decreases
     // because lower text index has priority in display
     if (p.keyCode === p.DOWN_ARROW) {
       // Move the text area up in the array (if not already at the top)
-      if (dragIndex < textAreas.length - 1) {
+      if (selectedIndex < textAreas.length - 1) {
         // Swap the current text area with the one above it
-        ;[textAreas[dragIndex], textAreas[dragIndex + 1]] = [
-          textAreas[dragIndex + 1],
-          textAreas[dragIndex]
+        ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
+          textAreas[selectedIndex + 1],
+          textAreas[selectedIndex]
         ]
-        // Update dragIndex to follow the moved text area
-        dragIndex++
+        // Update selectedIndex to follow the moved text area
+        selectedIndex++
         display() // Redraw to show the new order
       }
     } else if (p.keyCode === p.UP_ARROW) {
       // Move the text area down in the array (if not already at the bottom)
-      if (dragIndex > 0) {
+      if (selectedIndex > 0) {
         // Swap the current text area with the one below it
-        ;[textAreas[dragIndex], textAreas[dragIndex - 1]] = [
-          textAreas[dragIndex - 1],
-          textAreas[dragIndex]
+        ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
+          textAreas[selectedIndex - 1],
+          textAreas[selectedIndex]
         ]
-        // Update dragIndex to follow the moved text area
-        dragIndex--
+        // Update selectedIndex to follow the moved text area
+        selectedIndex--
         display() // Redraw to show the new order
       }
     }
