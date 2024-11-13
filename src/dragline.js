@@ -1,6 +1,8 @@
 import '../css/style.css'
 await import('p5js-wrapper')
 const blocks = await import('./blocks')
+// import tumblrRandomPost from './tumblr-random'
+// let corpus = await tumblrRandomPost()
 
 new p5(p => {
   let textAreas = []
