@@ -77,6 +77,7 @@ function findPlaceForString (words) {
   return true // Successfully placed the string
 }
 
+
 function splitRandomly (array, numChunks) {
   const total = array.length
   const minSize = Math.floor(total / numChunks)

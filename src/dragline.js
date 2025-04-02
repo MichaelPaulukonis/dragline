@@ -18,6 +18,21 @@ new p5(p => {
   const fillChar = ' '
   let monospaceFont = null
 
+  const infoBox = document.getElementById('info-box');
+  const closeButton = document.getElementById('close-info-box');
+
+  const toggleInfoBox = () => {
+    if (infoBox.classList.contains('hidden')) {
+      infoBox.classList.remove('hidden');
+    } else {
+      infoBox.classList.add('hidden');
+    }
+  };
+  
+  closeButton.addEventListener('click', () => {
+    toggleInfoBox();
+  });
+
   p.preload = function () {
     monospaceFont = p.loadFont('saxmono.ttf')
   }
@@ -37,6 +52,8 @@ new p5(p => {
     setupTextAreas(textAreas)
 
     display()
+
+    toggleInfoBox()
   }
 
   function setupTextAreas (textAreas) {
@@ -70,17 +87,16 @@ new p5(p => {
 
     if (dragging) {
       // Create a color variation based on selectedIndex
-      // const hue = (selectedIndex * 60) % 360;  // Rotate through hues (0-360)
       const minHue = 240;   // yellow
       const maxHue = 60;  // blue
       const hueRange = maxHue - minHue;
       const hue = maxHue - ((selectedIndex * (hueRange / textAreas.length)) % hueRange);
       
-      const saturation = 50;  // Keep moderate saturation
-      const brightness = 100; // Keep full brightness
-      const alpha = 100;      // Keep same transparency
+      const saturation = 50;  // moderate saturation
+      const brightness = 100; // full brightness
+      const alpha = 100;      // same transparency
     
-      p.colorMode(p.HSB);  // Switch to HSB color mode
+      p.colorMode(p.HSB);
       p.fill(hue, saturation, brightness, alpha);
       
       // Draw the highlight rectangle
@@ -91,8 +107,8 @@ new p5(p => {
         textAreas[selectedIndex].h * grid.cellSize
       );
       
-      p.colorMode(p.RGB);  // Switch back to RGB mode
-      p.fill(0);  // Reset fill to black for text
+      p.colorMode(p.RGB);
+      p.fill(0);
     }
     p.fill(0)
 
@@ -182,7 +198,6 @@ new p5(p => {
 
   p.mouseReleased = () => {
     dragging = false
-    // selectedIndex = -1
     display() // Redraw the grid to remove the highlight
   }
 
@@ -196,6 +211,9 @@ new p5(p => {
   }
 
   p.keyPressed = () => {
+    if (p.key === 'i') {
+      toggleInfoBox()
+    }
     // Only handle key events if we're currently dragging a text area
     if (!dragging || selectedIndex === -1) return
 
@@ -211,7 +229,7 @@ new p5(p => {
         ]
         // Update selectedIndex to follow the moved text area
         selectedIndex++
-        display() // Redraw to show the new order
+        display()
       }
     } else if (p.keyCode === p.UP_ARROW) {
       // Move the text area down in the array (if not already at the bottom)
@@ -223,7 +241,7 @@ new p5(p => {
         ]
         // Update selectedIndex to follow the moved text area
         selectedIndex--
-        display() // Redraw to show the new order
+        display()
       }
     }
   }

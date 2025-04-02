@@ -1,12 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>d r a g l i n e</title>
-  </head>
-  <body>
-    <script type="module" src="/src/dragline.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>d r a g l i n e</title>
+</head>
+
+<body>
+  <script type="module" src="/src/dragline.js"></script>
+  <div id="info-box" class="info-box hidden">
+    <h1>D R A G L I N E</h1>
+    <ul>
+      <li>Click and drag to reposition text areas on the grid.</li>
+      <li>Release the mouse to drop the text area in its new position.</li>
+      <li>Use the UP arrow key to move the selected text area down in the display order.</li>
+      <li>Use the DOWN arrow key to move the selected text area up in the display order.</li>
+    </ul>
+    <button id="close-info-box" class="close-button">x</button>
+  </div>
+</body>
+
 </html>
