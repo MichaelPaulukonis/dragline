@@ -1,17 +1,20 @@
-const gridSize = 40
+const gridSize = 20
 const FILLER = '.'
 let grid = Array(gridSize)
   .fill()
-  .map(() => Array(gridSize).fill(FILLER)) // Initialize a 30x30 grid with spaces
+  .map(() => Array(gridSize).fill(FILLER)) // Initialize grid
 // import tumblrRandom from '../src/tumblr-random.js';
 // const result = await tumblrRandom();
-import blocks from '../src/blocks.json' assert { type: 'json' }
-import tumbled from './sample.tumble.js'
+// import blocks from '../src/blocks.json' assert { type: 'json' }
+const blocks = require('../src/blocks.json')
+const tumbled = require('./sample.tumble.js')
 
 const cleanLine = line => line.replace(/\s+/g, ' ')
 
 function getRandomElement(array) {
-  return array[Math.floor(Math.random() * array.length)];
+  const idx = Math.floor(Math.random() * array.length)
+  console.log(array.length, idx, array[idx])
+  return array[idx];
 }
 
 function printGrid (grid) {
@@ -130,7 +133,8 @@ const blockify = () => {
 }
 
 const numChunks = getRandomElement([3,5,7])
-let words = getRandomElement(tumbled).split(/\s+/)
+console.log(tumbled.default)
+let words = getRandomElement(tumbled.default).split(/\s+/)
 const chunks = splitRandomly(words, numChunks)
 
 for (let chunk of chunks) {

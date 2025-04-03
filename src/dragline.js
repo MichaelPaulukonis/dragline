@@ -1,6 +1,7 @@
 import '../css/style.css'
 await import('p5js-wrapper')
-const blocks = await import('./blocks')
+// const blocks = await import('./blocks')
+const blocks = await import('./grids.20250403T123247766Z.json')
 // import tumblrRandomPost from './tumblr-random'
 // let corpus = await tumblrRandomPost()
 
@@ -56,6 +57,8 @@ new p5(p => {
     toggleInfoBox()
   }
 
+  // rn, this only ADDS to textAreas, it does not remove or replace existing ones.
+  // want to be able to add/remove more text areas, but also to replace or remove existing ones.
   function setupTextAreas (textAreas) {
     for (let i = 0; i < 10; i++) {
       let lines = blocks.default[Math.floor(Math.random() * blocks.default.length)].map(line =>
