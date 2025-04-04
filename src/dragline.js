@@ -22,9 +22,7 @@ new p5(p => {
     rows: 0,
     cellSize: 15
   }
-  // let fillChars = [' ', '.', '-', '|', ':', '*', '+'] // Characters to use for filling in the grid
   let fillChars = ' .-|:*+'
-
   let fillChar = fillChars[0]
   let monospaceFont = null
 
