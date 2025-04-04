@@ -9,6 +9,12 @@ new p5(p => {
   let textAreas = []
   let dragging = false
   let selectedIndex = -1
+  let blockCount = 10
+  // Define cluster center and clustering distance globally
+  let clusterCenterX = 0
+  let clusterCenterY = 0
+  let clusteringDistance = 5 // Adjust this value to control clustering tightness
+
   let offsetX, offsetY
   let gradient
   let grid = {
@@ -16,23 +22,26 @@ new p5(p => {
     rows: 0,
     cellSize: 15
   }
-  const fillChar = ' '
+  // let fillChars = [' ', '.', '-', '|', ':', '*', '+'] // Characters to use for filling in the grid
+  let fillChars = ' .-|:*+'
+
+  let fillChar = fillChars[0]
   let monospaceFont = null
 
-  const infoBox = document.getElementById('info-box');
-  const closeButton = document.getElementById('close-info-box');
+  const infoBox = document.getElementById('info-box')
+  const closeButton = document.getElementById('close-info-box')
 
   const toggleInfoBox = () => {
     if (infoBox.classList.contains('hidden')) {
-      infoBox.classList.remove('hidden');
+      infoBox.classList.remove('hidden')
     } else {
-      infoBox.classList.add('hidden');
+      infoBox.classList.add('hidden')
     }
-  };
-  
+  }
+
   closeButton.addEventListener('click', () => {
-    toggleInfoBox();
-  });
+    toggleInfoBox()
+  })
 
   p.preload = function () {
     monospaceFont = p.loadFont('saxmono.ttf')
@@ -43,6 +52,7 @@ new p5(p => {
     // Calculate grid dimensions based on canvas size
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
+    clusteringDistance = Math.floor(grid.cols / 2)
     p.textFont(monospaceFont)
     p.noStroke()
     setGradient()
@@ -57,20 +67,56 @@ new p5(p => {
     toggleInfoBox()
   }
 
-  // rn, this only ADDS to textAreas, it does not remove or replace existing ones.
-  // want to be able to add/remove more text areas, but also to replace or remove existing ones.
-  function setupTextAreas (textAreas) {
-    for (let i = 0; i < 10; i++) {
-      let lines = blocks.default[Math.floor(Math.random() * blocks.default.length)].map(line =>
-        line.replace(/ /g, fillChar)
+  function createBlock (usedIndices) {
+    let randomIndex
+    do {
+      randomIndex = Math.floor(Math.random() * blocks.default.length)
+    } while (usedIndices.has(randomIndex)) // Ensure uniqueness
+
+    usedIndices.add(randomIndex) // Track the used index
+
+    let lines = blocks.default[randomIndex].map(line =>
+      line.replace(/ /g, fillChar)
+    )
+
+    const width = Math.max(...lines.map(line => line.length))
+    const height = lines.length
+
+    // Generate random x and y positions within the clustering distance
+    const x = Math.max(
+      0,
+      Math.min(
+        grid.cols - width,
+        clusterCenterX + Math.floor((Math.random() - 0.5) * clusteringDistance)
       )
-      textAreas.push({
-        lines: lines,
-        x: Math.floor((Math.random() * grid.cols) / 2),
-        y: Math.floor((Math.random() * grid.rows) / 2),
-        w: Math.max(...lines.map(line => line.length)),
-        h: lines.length
-      })
+    )
+    const y = Math.max(
+      0,
+      Math.min(
+        grid.rows - height,
+        clusterCenterY + Math.floor((Math.random() - 0.5) * clusteringDistance)
+      )
+    )
+
+    return {
+      index: randomIndex, // Track the block's index for uniqueness
+      lines: lines,
+      x: x,
+      y: y,
+      w: width,
+      h: height
+    }
+  }
+
+  function setupTextAreas (textAreas) {
+    const usedIndices = new Set(textAreas.map(area => area.index)) // Track already used indices
+
+    // Set a new cluster center for this setup
+    clusterCenterX = Math.floor(Math.random() * grid.cols)
+    clusterCenterY = Math.floor(Math.random() * grid.rows)
+
+    while (textAreas.length < blockCount) {
+      textAreas.push(createBlock(usedIndices))
     }
   }
 
@@ -90,28 +136,29 @@ new p5(p => {
 
     if (dragging) {
       // Create a color variation based on selectedIndex
-      const minHue = 240;   // yellow
-      const maxHue = 60;  // blue
-      const hueRange = maxHue - minHue;
-      const hue = maxHue - ((selectedIndex * (hueRange / textAreas.length)) % hueRange);
-      
-      const saturation = 50;  // moderate saturation
-      const brightness = 100; // full brightness
-      const alpha = 100;      // same transparency
-    
-      p.colorMode(p.HSB);
-      p.fill(hue, saturation, brightness, alpha);
-      
+      const minHue = 240 // yellow
+      const maxHue = 60 // blue
+      const hueRange = maxHue - minHue
+      const hue =
+        maxHue - ((selectedIndex * (hueRange / textAreas.length)) % hueRange)
+
+      const saturation = 50 // moderate saturation
+      const brightness = 100 // full brightness
+      const alpha = 100 // same transparency
+
+      p.colorMode(p.HSB)
+      p.fill(hue, saturation, brightness, alpha)
+
       // Draw the highlight rectangle
       p.rect(
         textAreas[selectedIndex].x * grid.cellSize,
         textAreas[selectedIndex].y * grid.cellSize,
         textAreas[selectedIndex].w * grid.cellSize,
         textAreas[selectedIndex].h * grid.cellSize
-      );
-      
-      p.colorMode(p.RGB);
-      p.fill(0);
+      )
+
+      p.colorMode(p.RGB)
+      p.fill(0)
     }
     p.fill(0)
 
@@ -139,7 +186,8 @@ new p5(p => {
           try {
             if (
               withinGrid(area, i, j) &&
-              charGrid[area.y + i][area.x + j] === fillChar
+              charGrid[area.y + i][area.x + j] === fillChar &&
+              line[j] !== ' ' // replace spaces w/ fill char
             ) {
               charGrid[area.y + i][area.x + j] = line[j]
             }
@@ -201,7 +249,7 @@ new p5(p => {
 
   p.mouseReleased = () => {
     dragging = false
-    display() // Redraw the grid to remove the highlight
+    display() // to remove the highlight
   }
 
   function getRandomGridPosition (max) {
@@ -216,7 +264,31 @@ new p5(p => {
   p.keyPressed = () => {
     if (p.key === 'i') {
       toggleInfoBox()
+    } else if (p.key === ' ') {
+      fillChar = fillChars[(fillChars.indexOf(fillChar) + 1) % fillChars.length]
+      display()
+    } else if (p.key === 'r') {
+      // Clear and replace text areas
+      textAreas.length = 0
+      setupTextAreas(textAreas) // Reinitialize with new unique blocks
+      display()
+    } else if (p.keyCode === p.RIGHT_ARROW) {
+      // Add a new block
+      if (textAreas.length < blocks.default.length) {
+        const usedIndices = new Set(textAreas.map(area => area.index)) // Track used indices
+        textAreas.push(createBlock(usedIndices))
+        blockCount++
+        display()
+      }
+    } else if (p.keyCode === p.LEFT_ARROW) {
+      // Remove the last block (minimum of 1 block)
+      if (textAreas.length > 1) {
+        textAreas.pop()
+        blockCount--
+        display()
+      }
     }
+
     // Only handle key events if we're currently dragging a text area
     if (!dragging || selectedIndex === -1) return
 
