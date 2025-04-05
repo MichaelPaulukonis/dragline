@@ -6,6 +6,15 @@ TBH this "solves" a problem that has bothered me for over a decade - draggable, 
 
 It's not so much a tool as it is a piece of its own.
 
+## TODO
+
+- connect to tumblr for text for now
+- save screen ?
+  - without the background
+  - click-drag for a defined area to use a canvas?
+- auto-movement?
+  - this may be a separate project
+
 ## text sources
 
 - The poetry-bot may be too esoteric

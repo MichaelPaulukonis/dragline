@@ -1,15 +1,17 @@
 import '../css/style.css'
 await import('p5js-wrapper')
+import gridify from './text-grid'
 // const blocks = await import('./blocks')
-const blocks = await import('./grids.20250403T123247766Z.json')
-// import tumblrRandomPost from './tumblr-random'
-// let corpus = await tumblrRandomPost()
+// const blocks = await import('./grids.20250403T123247766Z.json')
+import tumblrRandomPost from './tumblr-random'
+let corpus = await tumblrRandomPost()
 
 new p5(p => {
   let textAreas = []
   let dragging = false
   let selectedIndex = -1
   let blockCount = 10
+  let blocks = gridify(corpus.join('\n')) // Use the gridify function to get the blocks
   // Define cluster center and clustering distance globally
   let clusterCenterX = 0
   let clusterCenterY = 0
@@ -58,6 +60,8 @@ new p5(p => {
     p.textSize(grid.cellSize + 4) // this works for 15, but is not a good rubric for other sizes
     p.textAlign(p.LEFT, p.TOP)
 
+    console.log(corpus)
+
     setupTextAreas(textAreas)
 
     display()
@@ -68,12 +72,12 @@ new p5(p => {
   function createBlock (usedIndices) {
     let randomIndex
     do {
-      randomIndex = Math.floor(Math.random() * blocks.default.length)
+      randomIndex = Math.floor(Math.random() * blocks.length)
     } while (usedIndices.has(randomIndex)) // Ensure uniqueness
 
     usedIndices.add(randomIndex) // Track the used index
 
-    let lines = blocks.default[randomIndex].map(line =>
+    let lines = blocks[randomIndex].map(line =>
       line.replace(/ /g, fillChar)
     )
 
@@ -106,6 +110,7 @@ new p5(p => {
     }
   }
 
+  // change side-effects to explicit return
   function setupTextAreas (textAreas) {
     const usedIndices = new Set(textAreas.map(area => area.index)) // Track already used indices
 
@@ -260,7 +265,7 @@ new p5(p => {
   }
 
   p.keyPressed = () => {
-    if (p.key === 'i') {
+    if (p.key === 'i' || p.keyCode === p.ESCAPE) {
       toggleInfoBox()
     } else if (p.key === ' ') {
       fillChar = fillChars[(fillChars.indexOf(fillChar) + 1) % fillChars.length]
@@ -272,7 +277,7 @@ new p5(p => {
       display()
     } else if (p.keyCode === p.RIGHT_ARROW) {
       // Add a new block
-      if (textAreas.length < blocks.default.length) {
+      if (textAreas.length < blocks.length) {
         const usedIndices = new Set(textAreas.map(area => area.index)) // Track used indices
         textAreas.push(createBlock(usedIndices))
         blockCount++
