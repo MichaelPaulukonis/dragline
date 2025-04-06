@@ -1,17 +1,29 @@
 import '../css/style.css'
 await import('p5js-wrapper')
 import gridify from './text-grid'
-// const blocks = await import('./blocks')
-// const blocks = await import('./grids.20250403T123247766Z.json')
+const fallbackBlocks = await import('./grids.20250403T123247766Z.json')
 import tumblrRandomPost from './tumblr-random'
-let corpus = await tumblrRandomPost()
+
+let corpus
+let blocks
+
+async function initializeBlocks() {
+  try {
+    corpus = await tumblrRandomPost()
+    blocks = gridify(corpus.join('\n'))
+  } catch (error) {
+    console.error('Failed to fetch or process data from tumblrRandomPost. Falling back to JSON import.', error)
+    blocks = fallbackBlocks.default
+  }
+}
+
+await initializeBlocks()
 
 new p5(p => {
   let textAreas = []
   let dragging = false
   let selectedIndex = -1
   let blockCount = 10
-  let blocks = gridify(corpus.join('\n')) // Use the gridify function to get the blocks
   // Define cluster center and clustering distance globally
   let clusterCenterX = 0
   let clusterCenterY = 0
@@ -264,7 +276,7 @@ new p5(p => {
     setGradient() // Recreate the gradient when the window is resized
   }
 
-  p.keyPressed = () => {
+  p.keyPressed = async () => {
     if (p.key === 'i' || p.keyCode === p.ESCAPE) {
       toggleInfoBox()
     } else if (p.key === ' ') {
@@ -290,13 +302,22 @@ new p5(p => {
         blockCount--
         display()
       }
+    } else if (p.key === 'n') {
+      // Request another query to tumblrRandomPost using initializeBlocks
+      try {
+        await initializeBlocks()
+        textAreas.length = 0
+        setupTextAreas(textAreas) // Reinitialize with new unique blocks
+        display()
+      } catch (error) {
+        console.error('Failed to fetch or process new data from tumblrRandomPost.', error)
+      }
     }
-
-    // Only handle key events if we're currently dragging a text area
-    if (!dragging || selectedIndex === -1) return
 
     // NOTE: down increases / up decreases
     // because lower text index has priority in display
+    if (!dragging || selectedIndex === -1) return
+
     if (p.keyCode === p.DOWN_ARROW) {
       // Move the text area up in the array (if not already at the top)
       if (selectedIndex < textAreas.length - 1) {
