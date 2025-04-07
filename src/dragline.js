@@ -1,22 +1,20 @@
 import '../css/style.css'
 await import('p5js-wrapper')
-// import gridify from './text-grid'
+import gridify from './text-grid'
 const fallbackBlocks = await import('./grids.20250403T123247766Z.json')
-// import tumblrRandomPost from './tumblr-random'
+import tumblrRandomPost from './tumblr-random'
 
 let corpus
 let blocks
 
 async function initializeBlocks() {
-  blocks = fallbackBlocks.default
-
-  // try {
-  //   corpus = await tumblrRandomPost()
-  //   blocks = gridify(corpus.join('\n'))
-  // } catch (error) {
-  //   console.error('Failed to fetch or process data from tumblrRandomPost. Falling back to JSON import.', error)
-  //   blocks = fallbackBlocks.default
-  // }
+  try {
+    corpus = await tumblrRandomPost()
+    blocks = gridify(corpus.join('\n'))
+  } catch (error) {
+    console.error('Failed to fetch or process data from tumblrRandomPost. Falling back to JSON import.', error)
+    blocks = fallbackBlocks.default
+  }
 }
 
 await initializeBlocks()
