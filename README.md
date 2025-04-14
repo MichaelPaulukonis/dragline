@@ -8,12 +8,15 @@ It's not so much a tool as it is a piece of its own.
 
 ## TODO
 
-- connect to tumblr for text for now
+- ~~connect to tumblr for text for now~~
 - save screen ?
   - without the background
   - click-drag for a defined area to use a canvas?
 - auto-movement?
   - this may be a separate project
+- better clustering
+- display of all blocks
+- ability to remove specific block (DEL while selected)
 
 ## text sources
 

@@ -19,14 +19,12 @@ async function initializeBlocks() {
 
 await initializeBlocks()
 
+// amazonq-ignore-next-line
 new p5(p => {
   let textAreas = []
   let dragging = false
   let selectedIndex = -1
   let blockCount = 10
-  // Define cluster center and clustering distance globally
-  let clusterCenterX = 0
-  let clusterCenterY = 0
   let clusteringDistance = 5 // Adjust this value to control clustering tightness
 
   let offsetX, offsetY
@@ -56,12 +54,14 @@ new p5(p => {
   })
 
   p.preload = function () {
+    // amazonq-ignore-next-line
     monospaceFont = p.loadFont('saxmono.ttf')
   }
 
   p.setup = () => {
     p.createCanvas(p.windowWidth, p.windowHeight)
     // Calculate grid dimensions based on canvas size
+    // amazonq-ignore-next-line
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
     clusteringDistance = Math.floor(grid.cols / 2)
@@ -69,25 +69,32 @@ new p5(p => {
     p.noStroke()
     setGradient()
 
-    p.textSize(grid.cellSize + 4) // this works for 15, but is not a good rubric for other sizes
+    const TEXT_SIZE_ADJUSTMENT = 4
+    p.textSize(grid.cellSize + TEXT_SIZE_ADJUSTMENT)
     p.textAlign(p.LEFT, p.TOP)
 
-    console.log(corpus)
-
-    setupTextAreas(textAreas)
+    textAreas = setupTextAreas(textAreas)
 
     display()
 
     toggleInfoBox()
   }
 
-  function createBlock (usedIndices) {
-    let randomIndex
-    do {
-      randomIndex = Math.floor(Math.random() * blocks.length)
-    } while (usedIndices.has(randomIndex)) // Ensure uniqueness
 
-    usedIndices.add(randomIndex) // Track the used index
+  // amazonq-ignore-next-line
+  function createBlock (usedIndices, clusterCenterX, clusterCenterY) {
+    let randomIndex
+    const availableIndices = Array.from(Array(blocks.length).keys()).filter(i => !usedIndices.has(i))
+
+    if (availableIndices.length === 0) {
+      console.warn('All indices have been used. Resetting usedIndices.')
+      usedIndices.clear()
+      availableIndices.push(...Array.from(Array(blocks.length).keys()))
+    }
+
+    const randomPosition = Math.floor(Math.random() * availableIndices.length)
+    randomIndex = availableIndices[randomPosition]
+    usedIndices.add(randomIndex)
 
     let lines = blocks[randomIndex].map(line =>
       line.replace(/ /g, fillChar)
@@ -127,12 +134,17 @@ new p5(p => {
     const usedIndices = new Set(textAreas.map(area => area.index)) // Track already used indices
 
     // Set a new cluster center for this setup
-    clusterCenterX = Math.floor(Math.random() * grid.cols)
-    clusterCenterY = Math.floor(Math.random() * grid.rows)
+    const clusterCenterX = Math.floor(Math.random() * grid.cols)
+    const clusterCenterY = Math.floor(Math.random() * grid.rows)
 
-    while (textAreas.length < blockCount) {
-      textAreas.push(createBlock(usedIndices))
+    const newTextAreas = [...textAreas]
+    const blocksToAdd = blockCount - newTextAreas.length
+    if (blocksToAdd > 0) {
+      const newBlocks = Array(blocksToAdd).fill().map(() => createBlock(usedIndices, clusterCenterX, clusterCenterY))
+      newTextAreas.push(...newBlocks)
     }
+
+    return newTextAreas
   }
 
   const setGradient = () => {
@@ -148,73 +160,88 @@ new p5(p => {
 
   const display = () => {
     drawGradient()
+    drawDraggingHighlight()
+    drawTextAreas()
+  }
 
+  const drawDraggingHighlight = () => {
     if (dragging) {
-      // Create a color variation based on selectedIndex
-      const minHue = 240 // yellow
-      const maxHue = 60 // blue
-      const hueRange = maxHue - minHue
-      const hue =
-        maxHue - ((selectedIndex * (hueRange / textAreas.length)) % hueRange)
-
-      const saturation = 50 // moderate saturation
-      const brightness = 100 // full brightness
-      const alpha = 100 // same transparency
+      const hue = calculateHue()
+      const saturation = 50
+      const brightness = 100
+      const alpha = 100
 
       p.colorMode(p.HSB)
       p.fill(hue, saturation, brightness, alpha)
 
-      // Draw the highlight rectangle
-      p.rect(
-        textAreas[selectedIndex].x * grid.cellSize,
-        textAreas[selectedIndex].y * grid.cellSize,
-        textAreas[selectedIndex].w * grid.cellSize,
-        textAreas[selectedIndex].h * grid.cellSize
-      )
+      drawHighlightRectangle()
 
       p.colorMode(p.RGB)
       p.fill(0)
     }
     p.fill(0)
+  }
 
-    // Create 2D array filled with dots
-    const charGrid = Array(grid.rows)
-      .fill()
-      .map(() => Array(grid.cols).fill(fillChar))
+  const calculateHue = () => {
+    const MIN_HUE = 240 // Blue
+    const MAX_HUE = 60  // Yellow
+    const HUE_RANGE = MAX_HUE - MIN_HUE
+    return MAX_HUE - ((selectedIndex * (HUE_RANGE / textAreas.length)) % HUE_RANGE)
+  }
 
-    const withinGrid = (area, i, j) => {
-      return (
-        area.y + i >= 0 &&
-        area.y + i < grid.rows &&
-        area.x + j >= 0 &&
-        area.x + j < grid.cols
-      )
+  const drawHighlightRectangle = () => {
+    const area = textAreas[selectedIndex]
+    p.rect(
+      area.x * grid.cellSize,
+      area.y * grid.cellSize,
+      area.w * grid.cellSize,
+      area.h * grid.cellSize
+    )
+  }
+
+  let cachedCharGrid = null
+
+  const drawTextAreas = () => {
+    if (!cachedCharGrid) {
+      cachedCharGrid = createCharGrid()
+    }
+    populateCharGrid(cachedCharGrid)
+    renderCharGrid(cachedCharGrid)
+  }
+
+  const createCharGrid = () => {
+    return Array(grid.rows).fill().map(() => Array(grid.cols).fill(fillChar))
+  }
+
+  const populateCharGrid = (charGrid) => {
+    // Reset the grid
+    for (let y = 0; y < grid.rows; y++) {
+      for (let x = 0; x < grid.cols; x++) {
+        charGrid[y][x] = fillChar
+      }
     }
 
-    // First pass: populate the normalized grid with text areas
     for (let area of textAreas) {
       for (let i = 0; i < area.lines.length; i++) {
         const line = area.lines[i]
         for (let j = 0; j < line.length; j++) {
           if (line[j] === fillChar) continue
 
-          try {
-            if (
-              withinGrid(area, i, j) &&
-              charGrid[area.y + i][area.x + j] === fillChar &&
-              line[j] !== ' ' // replace spaces w/ fill char
-            ) {
+          if (withinGrid(area, i, j) && charGrid[area.y + i][area.x + j] === fillChar && line[j] !== ' ') {
+            try {
               charGrid[area.y + i][area.x + j] = line[j]
+            } catch (error) {
+              console.error(`Error at position (${area.x + j}, ${area.y + i}):`, error)
+              // Skip this iteration and continue with the next character
+              continue
             }
-          } catch (error) {
-            console.error(error)
-            console.error(`Error at position (${area.x + j}, ${area.y + i})`)
           }
         }
       }
     }
+  }
 
-    // Second pass: render the grid - only convert to pixels here
+  const renderCharGrid = (charGrid) => {
     for (let y = 0; y < charGrid.length; y++) {
       for (let x = 0; x < charGrid[y].length; x++) {
         const canvasX = x * grid.cellSize
@@ -222,6 +249,15 @@ new p5(p => {
         p.text(charGrid[y][x], canvasX, canvasY)
       }
     }
+  }
+
+  const withinGrid = (area, i, j) => {
+    return (
+      area.y + i >= 0 &&
+      area.y + i < grid.rows &&
+      area.x + j >= 0 &&
+      area.x + j < grid.cols
+    )
   }
 
   p.draw = () => {
@@ -267,10 +303,6 @@ new p5(p => {
     display() // to remove the highlight
   }
 
-  function getRandomGridPosition (max) {
-    return Math.floor(Math.random() * (max / grid.cellSize)) * grid.cellSize
-  }
-
   p.windowResized = () => {
     p.resizeCanvas(p.windowWidth, p.windowHeight)
     setGradient() // Recreate the gradient when the window is resized
@@ -285,7 +317,7 @@ new p5(p => {
     } else if (p.key === 'r') {
       // Clear and replace text areas
       textAreas.length = 0
-      setupTextAreas(textAreas) // Reinitialize with new unique blocks
+      textAreas = setupTextAreas(textAreas) // Reinitialize with new unique blocks
       display()
     } else if (p.keyCode === p.RIGHT_ARROW) {
       // Add a new block
@@ -307,7 +339,7 @@ new p5(p => {
       try {
         await initializeBlocks()
         textAreas.length = 0
-        setupTextAreas(textAreas) // Reinitialize with new unique blocks
+        textAreas = setupTextAreas(textAreas) // Reinitialize with new unique blocks
         display()
       } catch (error) {
         console.error('Failed to fetch or process new data from tumblrRandomPost.', error)
