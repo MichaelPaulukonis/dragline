@@ -9,7 +9,7 @@ It's not so much a tool as it is a piece of its own.
 ## TODO
 
 - ~~connect to tumblr for text for now~~
-- save screen ?
+- save screen
   - without the background
   - click-drag for a defined area to use a canvas?
 - ability to remove specific block (DEL while selected)
