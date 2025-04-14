@@ -8,6 +8,7 @@ const gridify = (data) => {
     // Build a 40x40 grid with the tokens, 50% density
     const grids = buildGrid(tokens, 0.5);
 
+    // amazonq-ignore-next-line
     console.log('Generated 40x40 grids: ', grids.length);
 
     // Split the grid into four 20x20 grids

@@ -61,7 +61,9 @@ canvas {
 }
 
 .info-box {
-  position: fixed;
+  position: absolute;
+  cursor: move;
+  user-select: none;
   top: 20%;
   left: 50%;
   transform: translate(-50%, -20%);
@@ -77,6 +79,16 @@ canvas {
   h1 {
     text-align: center;
   }
+}
+
+.info-box * {
+  pointer-events: none; /* This makes all child elements "click-through" */
+}
+
+.info-box a,
+.info-box .close-button {
+    cursor: pointer;
+    pointer-events: auto;
 }
 
 .hidden {

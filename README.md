@@ -12,11 +12,16 @@ It's not so much a tool as it is a piece of its own.
 - save screen ?
   - without the background
   - click-drag for a defined area to use a canvas?
+- ability to remove specific block (DEL while selected)
+  - tricky. Maybe have a "SELECT" mode, where we move from area to area with keys
+  - this would make up/down easier to deal with
+  - and we could "replace" the individual block
+  - or clone it (why would we WANT to ????)
+  - or edit (uuhmmmmmmm)
 - auto-movement?
   - this may be a separate project
 - better clustering
 - display of all blocks
-- ability to remove specific block (DEL while selected)
 
 ## text sources
 

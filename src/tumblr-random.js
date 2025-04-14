@@ -19,6 +19,7 @@ const tumblrRandomPost = () => {
     axios
       .get(apiUrl)
       .then(
+        // amazonq-ignore-next-line
         response => {
           const rndPost = Math.floor(
             Math.random() * response.data.response.total_posts

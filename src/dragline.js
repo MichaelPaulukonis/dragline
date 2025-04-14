@@ -7,12 +7,15 @@ import tumblrRandomPost from './tumblr-random'
 let corpus
 let blocks
 
-async function initializeBlocks() {
+async function initializeBlocks () {
   try {
     corpus = await tumblrRandomPost()
     blocks = gridify(corpus.join('\n'))
   } catch (error) {
-    console.error('Failed to fetch or process data from tumblrRandomPost. Falling back to JSON import.', error)
+    console.error(
+      'Failed to fetch or process data from tumblrRandomPost. Falling back to JSON import.',
+      error
+    )
     blocks = fallbackBlocks.default
   }
 }
@@ -54,7 +57,6 @@ new p5(p => {
   })
 
   p.preload = function () {
-    // amazonq-ignore-next-line
     monospaceFont = p.loadFont('saxmono.ttf')
   }
 
@@ -80,11 +82,12 @@ new p5(p => {
     toggleInfoBox()
   }
 
-
   // amazonq-ignore-next-line
   function createBlock (usedIndices, clusterCenterX, clusterCenterY) {
     let randomIndex
-    const availableIndices = Array.from(Array(blocks.length).keys()).filter(i => !usedIndices.has(i))
+    const availableIndices = Array.from(Array(blocks.length).keys()).filter(
+      i => !usedIndices.has(i)
+    )
 
     if (availableIndices.length === 0) {
       console.warn('All indices have been used. Resetting usedIndices.')
@@ -96,9 +99,7 @@ new p5(p => {
     randomIndex = availableIndices[randomPosition]
     usedIndices.add(randomIndex)
 
-    let lines = blocks[randomIndex].map(line =>
-      line.replace(/ /g, fillChar)
-    )
+    let lines = blocks[randomIndex].map(line => line.replace(/ /g, fillChar))
 
     const width = Math.max(...lines.map(line => line.length))
     const height = lines.length
@@ -140,7 +141,9 @@ new p5(p => {
     const newTextAreas = [...textAreas]
     const blocksToAdd = blockCount - newTextAreas.length
     if (blocksToAdd > 0) {
-      const newBlocks = Array(blocksToAdd).fill().map(() => createBlock(usedIndices, clusterCenterX, clusterCenterY))
+      const newBlocks = Array(blocksToAdd)
+        .fill()
+        .map(() => createBlock(usedIndices, clusterCenterX, clusterCenterY))
       newTextAreas.push(...newBlocks)
     }
 
@@ -184,9 +187,11 @@ new p5(p => {
 
   const calculateHue = () => {
     const MIN_HUE = 240 // Blue
-    const MAX_HUE = 60  // Yellow
+    const MAX_HUE = 60 // Yellow
     const HUE_RANGE = MAX_HUE - MIN_HUE
-    return MAX_HUE - ((selectedIndex * (HUE_RANGE / textAreas.length)) % HUE_RANGE)
+    return (
+      MAX_HUE - ((selectedIndex * (HUE_RANGE / textAreas.length)) % HUE_RANGE)
+    )
   }
 
   const drawHighlightRectangle = () => {
@@ -210,10 +215,12 @@ new p5(p => {
   }
 
   const createCharGrid = () => {
-    return Array(grid.rows).fill().map(() => Array(grid.cols).fill(fillChar))
+    return Array(grid.rows)
+      .fill()
+      .map(() => Array(grid.cols).fill(fillChar))
   }
 
-  const populateCharGrid = (charGrid) => {
+  const populateCharGrid = charGrid => {
     // Reset the grid
     for (let y = 0; y < grid.rows; y++) {
       for (let x = 0; x < grid.cols; x++) {
@@ -227,11 +234,18 @@ new p5(p => {
         for (let j = 0; j < line.length; j++) {
           if (line[j] === fillChar) continue
 
-          if (withinGrid(area, i, j) && charGrid[area.y + i][area.x + j] === fillChar && line[j] !== ' ') {
+          if (
+            withinGrid(area, i, j) &&
+            charGrid[area.y + i][area.x + j] === fillChar &&
+            line[j] !== ' '
+          ) {
             try {
               charGrid[area.y + i][area.x + j] = line[j]
             } catch (error) {
-              console.error(`Error at position (${area.x + j}, ${area.y + i}):`, error)
+              console.error(
+                `Error at position (${area.x + j}, ${area.y + i}):`,
+                error
+              )
               // Skip this iteration and continue with the next character
               continue
             }
@@ -241,7 +255,7 @@ new p5(p => {
     }
   }
 
-  const renderCharGrid = (charGrid) => {
+  const renderCharGrid = charGrid => {
     for (let y = 0; y < charGrid.length; y++) {
       for (let x = 0; x < charGrid[y].length; x++) {
         const canvasX = x * grid.cellSize
@@ -260,12 +274,25 @@ new p5(p => {
     )
   }
 
+  function isClickOnInfoBox (element) {
+    const rect = element.getBoundingClientRect()
+    return (
+      p.mouseX >= rect.left &&
+      p.mouseX <= rect.right &&
+      p.mouseY >= rect.top &&
+      p.mouseY <= rect.bottom
+    )
+  }
+
   p.draw = () => {
     if (!dragging) return
     display()
   }
 
   p.mousePressed = () => {
+    if (isClickOnInfoBox(infoBox)) {
+      return false // Prevents p5js from handling this event
+    }
     for (let i = 0; i < textAreas.length; i++) {
       let area = textAreas[i]
       // Convert grid coordinates to pixels for hit testing
@@ -290,6 +317,9 @@ new p5(p => {
   }
 
   p.mouseDragged = () => {
+    if (isClickOnInfoBox(infoBox)) {
+      return false // Prevents p5js from handling this event
+    }
     if (dragging) {
       let area = textAreas[selectedIndex]
       // Convert mouse position to grid coordinates directly
@@ -342,7 +372,10 @@ new p5(p => {
         textAreas = setupTextAreas(textAreas) // Reinitialize with new unique blocks
         display()
       } catch (error) {
-        console.error('Failed to fetch or process new data from tumblrRandomPost.', error)
+        console.error(
+          'Failed to fetch or process new data from tumblrRandomPost.',
+          error
+        )
       }
     }
 

@@ -13,6 +13,7 @@ const cleanLine = line => line.replace(/\s+/g, ' ')
 
 function getRandomElement(array) {
   const idx = Math.floor(Math.random() * array.length)
+  // amazonq-ignore-next-line
   console.log(array.length, idx, array[idx])
   return array[idx];
 }
