@@ -33,7 +33,7 @@ new p5(p => {
   let selectedIndex = -1 // Index of the currently selected block
   let blockCount = 10 // Initial number of blocks
   let clusteringDistance = 5 // Controls clustering tightness
-
+  let fieldIsDirty = false // Flag to redraw entire field
   let offsetX, offsetY // Offset for dragging
   let gradient // Gradient for the background
   let grid = {
@@ -78,7 +78,14 @@ new p5(p => {
     p.textSize(textSize)
     p.textAlign(p.LEFT, p.TOP)
 
-    textAreas = setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance)
+    textAreas = setupTextAreas(
+      textAreas,
+      blocks,
+      blockCount,
+      grid,
+      fillChar,
+      clusteringDistance
+    )
 
     display()
 
@@ -107,7 +114,8 @@ new p5(p => {
 
   // Highlight the selected block while dragging or selected
   const drawDraggingHighlight = () => {
-    if (selectedIndex !== -1) { // Highlight if a block is selected
+    if (selectedIndex !== -1) {
+      // Highlight if a block is selected
       const hue = calculateHue()
       const saturation = 50
       const brightness = 100
@@ -148,16 +156,23 @@ new p5(p => {
 
   // Draw all text areas on the canvas
   const drawTextAreas = () => {
-    if (!cachedCharGrid) {
+    if (!cachedCharGrid || fieldIsDirty) {
       cachedCharGrid = createCharGrid(grid.rows, grid.cols, fillChar)
     }
 
     // Pass previous and current text areas for optimized updates
-    populateCharGrid(cachedCharGrid, previousTextAreas, textAreas, fillChar, withinGrid)
+    populateCharGrid(
+      cachedCharGrid,
+      previousTextAreas,
+      textAreas,
+      fillChar,
+      withinGrid
+    )
     renderCharGrid(cachedCharGrid, p, grid, fillChar)
 
     // Update previousTextAreas to match the current state
     previousTextAreas = JSON.parse(JSON.stringify(textAreas))
+    fieldIsDirty = false
   }
 
   // Check if a position is within the grid boundaries
@@ -171,7 +186,7 @@ new p5(p => {
   }
 
   // Check if the mouse click is on the info box
-  function isClickOnInfoBox(element) {
+  function isClickOnInfoBox (element) {
     const rect = element.getBoundingClientRect()
     return (
       p.mouseX >= rect.left &&
@@ -251,8 +266,12 @@ new p5(p => {
       toggleInfoBox()
     } else if (p.key === ' ') {
       cycleFillChar()
+      fieldIsDirty = true
+      display()
     } else if (p.key === 'r') {
       resetTextAreas()
+      fieldIsDirty = true
+      display()
     } else if (p.keyCode === p.RIGHT_ARROW && selectedIndex === -1) {
       addBlock()
     } else if (p.keyCode === p.LEFT_ARROW && selectedIndex === -1) {
@@ -265,30 +284,45 @@ new p5(p => {
   }
 
   // Cycle through fill characters
-  function cycleFillChar() {
+  function cycleFillChar () {
     fillChar = fillChars[(fillChars.indexOf(fillChar) + 1) % fillChars.length]
-    display()
   }
 
   // Reset text areas
-  function resetTextAreas() {
+  function resetTextAreas () {
     textAreas.length = 0
-    textAreas = setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance)
-    display()
+    textAreas = setupTextAreas(
+      textAreas,
+      blocks,
+      blockCount,
+      grid,
+      fillChar,
+      clusteringDistance
+    )
   }
 
   // Add a new block
-  function addBlock() {
+  function addBlock () {
     if (textAreas.length < blocks.length) {
       const usedIndices = new Set(textAreas.map(area => area.index))
-      textAreas.push(createBlock(usedIndices, Math.floor(grid.cols / 2), Math.floor(grid.rows / 2), blocks, fillChar, clusteringDistance, grid))
+      textAreas.push(
+        createBlock(
+          usedIndices,
+          Math.floor(grid.cols / 2),
+          Math.floor(grid.rows / 2),
+          blocks,
+          fillChar,
+          clusteringDistance,
+          grid
+        )
+      )
       blockCount++
       display()
     }
   }
 
   // Remove the last block
-  function removeBlock() {
+  function removeBlock () {
     if (textAreas.length > 1) {
       textAreas.pop()
       blockCount--
@@ -296,28 +330,34 @@ new p5(p => {
     }
   }
 
-  // Handle arrow key movements
-  function handleArrowKeys() {
-    const area = textAreas[selectedIndex]
-    if (p.keyCode === p.UP_ARROW && !p.keyIsDown(p.SHIFT)) {
+  const handleMovementKeys = area => {
+    if (p.keyIsDown(p.UP_ARROW) && !p.keyIsDown(p.SHIFT)) {
       area.y = Math.max(0, area.y - 1) // Move up
-    } else if (p.keyCode === p.DOWN_ARROW && !p.keyIsDown(p.SHIFT)) {
+    } else if (p.keyIsDown(p.DOWN_ARROW) && !p.keyIsDown(p.SHIFT)) {
       area.y = Math.min(grid.rows - area.h, area.y + 1) // Move down
-    } else if (p.keyCode === p.LEFT_ARROW) {
+    } else if (p.keyIsDown(p.LEFT_ARROW)) {
       area.x = Math.max(0, area.x - 1) // Move left
-    } else if (p.keyCode === p.RIGHT_ARROW) {
+    } else if (p.keyIsDown(p.RIGHT_ARROW)) {
       area.x = Math.min(grid.cols - area.w, area.x + 1) // Move right
-    } else if (p.keyCode === p.UP_ARROW && p.keyIsDown(p.SHIFT)) {
+    }
+  }
+
+  // Handle arrow key movements
+  function handleArrowKeys () {
+    const area = textAreas[selectedIndex]
+    handleMovementKeys(area)
+    const isShiftPressed = p.keyIsDown(p.SHIFT)
+    if (p.keyCode === p.UP_ARROW && isShiftPressed) {
       if (selectedIndex > 0) {
-        [textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
+        ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
           textAreas[selectedIndex - 1],
           textAreas[selectedIndex]
         ]
         selectedIndex--
       }
-    } else if (p.keyCode === p.DOWN_ARROW && p.keyIsDown(p.SHIFT)) {
+    } else if (p.keyCode === p.DOWN_ARROW && isShiftPressed) {
       if (selectedIndex < textAreas.length - 1) {
-        [textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
+        ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
           textAreas[selectedIndex + 1],
           textAreas[selectedIndex]
         ]
@@ -330,14 +370,24 @@ new p5(p => {
   }
 
   // Fetch new blocks from Tumblr
-  async function fetchNewBlocks() {
+  async function fetchNewBlocks () {
     try {
       await initializeBlocks()
       textAreas.length = 0
-      textAreas = setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance)
+      textAreas = setupTextAreas(
+        textAreas,
+        blocks,
+        blockCount,
+        grid,
+        fillChar,
+        clusteringDistance
+      )
       display()
     } catch (error) {
-      console.error('Failed to fetch or process new data from tumblrRandomPost.', error)
+      console.error(
+        'Failed to fetch or process new data from tumblrRandomPost.',
+        error
+      )
     }
   }
 
@@ -345,15 +395,7 @@ new p5(p => {
   p.draw = () => {
     if (selectedIndex !== -1 && !dragging) {
       const area = textAreas[selectedIndex]
-      if (p.keyIsDown(p.UP_ARROW) && !p.keyIsDown(p.SHIFT)) {
-        area.y = Math.max(0, area.y - 1) // Move up
-      } else if (p.keyIsDown(p.DOWN_ARROW) && !p.keyIsDown(p.SHIFT)) {
-        area.y = Math.min(grid.rows - area.h, area.y + 1) // Move down
-      } else if (p.keyIsDown(p.LEFT_ARROW)) {
-        area.x = Math.max(0, area.x - 1) // Move left
-      } else if (p.keyIsDown(p.RIGHT_ARROW)) {
-        area.x = Math.min(grid.cols - area.w, area.x + 1) // Move right
-      }
+      handleMovementKeys(area)
       display() // Update the display after movement
     }
   }

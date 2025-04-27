@@ -39,7 +39,8 @@ export const renderCharGrid = (charGrid, p, grid, fillChar) => {
     for (let x = 0; x < charGrid[y].length; x++) {
       const canvasX = x * grid.cellSize
       const canvasY = y * grid.cellSize
-      p.text(charGrid[y][x], canvasX, canvasY)
+      const charToRender = charGrid[y][x] === ' ' ? fillChar : charGrid[y][x] // Replace spaces with fillChar
+      p.text(charToRender, canvasX, canvasY)
     }
   }
 }

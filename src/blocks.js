@@ -11,7 +11,8 @@ export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks,
   const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)]
   usedIndices.add(randomIndex)
 
-  let lines = blocks[randomIndex].map(line => line.replace(/ /g, fillChar))
+  // Retain the original lines without replacing spaces
+  const lines = blocks[randomIndex]
 
   const width = Math.max(...lines.map(line => line.length))
   const height = lines.length
@@ -33,7 +34,7 @@ export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks,
 
   return {
     index: randomIndex,
-    lines: lines,
+    lines: lines, // Keep the original lines
     x: x,
     y: y,
     w: width,
