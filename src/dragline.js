@@ -379,26 +379,33 @@ new p5(p => {
   // Handle arrow key movements
   function handleArrowKeys () {
     const area = textAreas[selectedIndex]
-    handleMovementKeys(area)
     const isShiftPressed = p.keyIsDown(p.SHIFT)
-    if (p.keyCode === p.UP_ARROW && isShiftPressed) {
-      if (selectedIndex > 0) {
-        ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
-          textAreas[selectedIndex - 1],
-          textAreas[selectedIndex]
-        ]
-        selectedIndex--
+
+    if (isShiftPressed) {
+      if (p.keyCode === p.LEFT_ARROW) {
+        selectedIndex =
+          (selectedIndex - 1 + textAreas.length) % textAreas.length
+      } else if (p.keyCode === p.RIGHT_ARROW) {
+        selectedIndex = (selectedIndex + 1) % textAreas.length
+      } else if (p.keyCode === p.UP_ARROW) {
+        if (selectedIndex > 0) {
+          ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
+            textAreas[selectedIndex - 1],
+            textAreas[selectedIndex]
+          ]
+          selectedIndex--
+        }
+      } else if (p.keyCode === p.DOWN_ARROW) {
+        if (selectedIndex < textAreas.length - 1) {
+          ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
+            textAreas[selectedIndex + 1],
+            textAreas[selectedIndex]
+          ]
+          selectedIndex++
+        }
       }
-    } else if (p.keyCode === p.DOWN_ARROW && isShiftPressed) {
-      if (selectedIndex < textAreas.length - 1) {
-        ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
-          textAreas[selectedIndex + 1],
-          textAreas[selectedIndex]
-        ]
-        selectedIndex++
-      }
-    } else if (p.keyCode === p.ENTER) {
-      selectedIndex = -1 // Deselect the block
+    } else {
+      handleMovementKeys(area)
     }
     display()
   }
