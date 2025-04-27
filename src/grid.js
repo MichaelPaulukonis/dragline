@@ -5,13 +5,14 @@ export const createCharGrid = (rows, cols, fillChar) => {
 }
 
 export const populateCharGrid = (charGrid, textAreas, fillChar, withinGrid) => {
-  // Reset the grid
+  // Reset the entire grid to the fill character
   for (let y = 0; y < charGrid.length; y++) {
     for (let x = 0; x < charGrid[y].length; x++) {
       charGrid[y][x] = fillChar
     }
   }
 
+  // Populate the grid with the current positions of text areas
   for (let area of textAreas) {
     for (let i = 0; i < area.lines.length; i++) {
       const line = area.lines[i]

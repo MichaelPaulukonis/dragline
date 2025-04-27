@@ -9,6 +9,7 @@ import tumblrRandomPost from './tumblr-random'
 let corpus
 let blocks
 
+// Initialize blocks by fetching data from Tumblr or falling back to a local JSON file
 async function initializeBlocks () {
   try {
     corpus = await tumblrRandomPost()
@@ -24,55 +25,56 @@ async function initializeBlocks () {
 
 await initializeBlocks()
 
-// amazonq-ignore-next-line
+// Main p5.js instance
 new p5(p => {
-  let textAreas = []
-  let dragging = false
-  let selectedIndex = -1
-  let blockCount = 10
-  let clusteringDistance = 5 // Adjust this value to control clustering tightness
+  let textAreas = [] // Array to store text blocks
+  let dragging = false // Flag to track dragging state
+  let selectedIndex = -1 // Index of the currently selected block
+  let blockCount = 10 // Initial number of blocks
+  let clusteringDistance = 5 // Controls clustering tightness
 
-  let offsetX, offsetY
-  let gradient
+  let offsetX, offsetY // Offset for dragging
+  let gradient // Gradient for the background
   let grid = {
     cols: 0,
     rows: 0,
-    cellSize: 15
+    cellSize: 15 // Size of each grid cell
   }
-  let fillChars = ' .-|:*+'
-  let fillChar = fillChars[0]
-  let monospaceFont = null
+  let fillChars = ' .-|:*+' // Characters used for filling text blocks
+  let fillChar = fillChars[0] // Default fill character
+  let monospaceFont = null // Font for rendering text
 
+  // DOM elements for the info box
   const infoBox = document.getElementById('info-box')
   const closeButton = document.getElementById('close-info-box')
 
+  // Toggle the visibility of the info box
   const toggleInfoBox = () => {
-    if (infoBox.classList.contains('hidden')) {
-      infoBox.classList.remove('hidden')
-    } else {
-      infoBox.classList.add('hidden')
-    }
+    infoBox.classList.toggle('hidden') // Simplify logic with toggle
   }
 
   closeButton.addEventListener('click', () => {
     toggleInfoBox()
   })
 
+  // Preload assets (e.g., fonts)
   p.preload = function () {
     monospaceFont = p.loadFont('saxmono.ttf')
   }
 
+  // Setup the canvas and initialize the grid and text areas
   p.setup = () => {
     p.createCanvas(p.windowWidth, p.windowHeight)
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
-    clusteringDistance = Math.floor(grid.cols / 2)
+    clusteringDistance = Math.floor(grid.cols / 2) // Cache this value
     p.textFont(monospaceFont)
     p.noStroke()
     setGradient()
 
     const TEXT_SIZE_ADJUSTMENT = 4
-    p.textSize(grid.cellSize + TEXT_SIZE_ADJUSTMENT)
+    const textSize = grid.cellSize + TEXT_SIZE_ADJUSTMENT // Cache this value
+    p.textSize(textSize)
     p.textAlign(p.LEFT, p.TOP)
 
     textAreas = setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance)
@@ -82,23 +84,27 @@ new p5(p => {
     toggleInfoBox()
   }
 
+  // Create a gradient for the background
   const setGradient = () => {
     gradient = p.drawingContext.createLinearGradient(0, 0, p.width, 0)
     gradient.addColorStop(0, '#f8b500')
     gradient.addColorStop(1, '#fceabb')
   }
 
+  // Draw the gradient background
   function drawGradient () {
     p.drawingContext.fillStyle = gradient
     p.drawingContext.fillRect(0, 0, p.width, p.height)
   }
 
+  // Main display function to render the canvas
   const display = () => {
     drawGradient()
     drawDraggingHighlight()
     drawTextAreas()
   }
 
+  // Highlight the selected block while dragging
   const drawDraggingHighlight = () => {
     if (dragging) {
       const hue = calculateHue()
@@ -112,11 +118,11 @@ new p5(p => {
       drawHighlightRectangle()
 
       p.colorMode(p.RGB)
-      p.fill(0)
     }
-    p.fill(0)
+    p.fill(0) // Remove redundant p.fill(0)
   }
 
+  // Calculate the hue for the dragging highlight
   const calculateHue = () => {
     const MIN_HUE = 240 // Blue
     const MAX_HUE = 60 // Yellow
@@ -126,6 +132,7 @@ new p5(p => {
     )
   }
 
+  // Draw a rectangle around the selected block
   const drawHighlightRectangle = () => {
     const area = textAreas[selectedIndex]
     p.rect(
@@ -136,8 +143,9 @@ new p5(p => {
     )
   }
 
-  let cachedCharGrid = null
+  let cachedCharGrid = null // Cache for the character grid
 
+  // Draw all text areas on the canvas
   const drawTextAreas = () => {
     if (!cachedCharGrid) {
       cachedCharGrid = createCharGrid(grid.rows, grid.cols, fillChar)
@@ -146,6 +154,7 @@ new p5(p => {
     renderCharGrid(cachedCharGrid, p, grid, fillChar)
   }
 
+  // Check if a position is within the grid boundaries
   const withinGrid = (area, i, j) => {
     return (
       area.y + i >= 0 &&
@@ -155,6 +164,7 @@ new p5(p => {
     )
   }
 
+  // Check if the mouse click is on the info box
   function isClickOnInfoBox(element) {
     const rect = element.getBoundingClientRect()
     return (
@@ -165,6 +175,7 @@ new p5(p => {
     )
   }
 
+  // Handle mouse press events
   p.mousePressed = () => {
     if (isClickOnInfoBox(infoBox)) {
       return false // Prevents p5js from handling this event
@@ -173,16 +184,14 @@ new p5(p => {
     let blockClicked = false
     for (let i = 0; i < textAreas.length; i++) {
       const area = textAreas[i]
-      // Calculate block boundaries in pixels
       const pixelX = area.x * grid.cellSize
       const pixelY = area.y * grid.cellSize
       const pixelW = area.w * grid.cellSize
       const pixelH = area.h * grid.cellSize
 
-      // Check if the mouse click is within the block's boundaries
       if (
         p.mouseX >= pixelX &&
-        p.mouseX < pixelX + pixelW && // Use `<` instead of `<=` for proper boundary handling
+        p.mouseX < pixelX + pixelW &&
         p.mouseY >= pixelY &&
         p.mouseY < pixelY + pixelH
       ) {
@@ -199,27 +208,29 @@ new p5(p => {
       selectedIndex = -1 // Deselect if no block is clicked
     }
 
-    display() // Ensure the display updates to reflect selection changes
+    display() // Update the display
   }
 
+  // Handle mouse drag events
   p.mouseDragged = () => {
     if (isClickOnInfoBox(infoBox)) {
       return false // Prevents p5js from handling this event
     }
     if (dragging) {
       let area = textAreas[selectedIndex]
-      // Convert mouse position to grid coordinates directly
       area.x = Math.floor((p.mouseX - offsetX) / grid.cellSize)
       area.y = Math.floor((p.mouseY - offsetY) / grid.cellSize)
       display() // Update the display while dragging
     }
   }
 
+  // Handle mouse release events
   p.mouseReleased = () => {
     dragging = false
-    display() // to remove the highlight
+    display() // Remove the highlight
   }
 
+  // Handle key press events
   p.keyPressed = async () => {
     if (p.key === 'i' || p.keyCode === p.ESCAPE) {
       toggleInfoBox()
@@ -238,17 +249,20 @@ new p5(p => {
     }
   }
 
+  // Cycle through fill characters
   function cycleFillChar() {
     fillChar = fillChars[(fillChars.indexOf(fillChar) + 1) % fillChars.length]
     display()
   }
 
+  // Reset text areas
   function resetTextAreas() {
     textAreas.length = 0
     textAreas = setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance)
     display()
   }
 
+  // Add a new block
   function addBlock() {
     if (textAreas.length < blocks.length) {
       const usedIndices = new Set(textAreas.map(area => area.index))
@@ -258,6 +272,7 @@ new p5(p => {
     }
   }
 
+  // Remove the last block
   function removeBlock() {
     if (textAreas.length > 1) {
       textAreas.pop()
@@ -266,6 +281,7 @@ new p5(p => {
     }
   }
 
+  // Handle arrow key movements
   function handleArrowKeys() {
     const area = textAreas[selectedIndex]
     if (p.keyCode === p.UP_ARROW && !p.keyIsDown(p.SHIFT)) {
@@ -298,6 +314,7 @@ new p5(p => {
     display()
   }
 
+  // Fetch new blocks from Tumblr
   async function fetchNewBlocks() {
     try {
       await initializeBlocks()
@@ -309,6 +326,7 @@ new p5(p => {
     }
   }
 
+  // Handle continuous key presses for movement
   p.draw = () => {
     if (selectedIndex !== -1 && !dragging) {
       const area = textAreas[selectedIndex]

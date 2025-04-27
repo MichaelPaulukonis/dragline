@@ -1,17 +1,14 @@
 export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks, fillChar, clusteringDistance, grid) {
-  let randomIndex
-  const availableIndices = Array.from(Array(blocks.length).keys()).filter(
-    i => !usedIndices.has(i)
-  )
+  const allIndices = Array.from(Array(blocks.length).keys()) // Cache all indices
+  const availableIndices = allIndices.filter(i => !usedIndices.has(i))
 
   if (availableIndices.length === 0) {
     console.warn('All indices have been used. Resetting usedIndices.')
     usedIndices.clear()
-    availableIndices.push(...Array.from(Array(blocks.length).keys()))
+    availableIndices.push(...allIndices)
   }
 
-  const randomPosition = Math.floor(Math.random() * availableIndices.length)
-  randomIndex = availableIndices[randomPosition]
+  const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)]
   usedIndices.add(randomIndex)
 
   let lines = blocks[randomIndex].map(line => line.replace(/ /g, fillChar))
