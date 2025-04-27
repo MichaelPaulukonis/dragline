@@ -1,4 +1,6 @@
 import '../css/style.css'
+import '../css/infobox.css'
+
 await import('p5js-wrapper')
 import gridify from './text-grid'
 import { createCharGrid, populateCharGrid, renderCharGrid } from './grid'
@@ -280,7 +282,39 @@ new p5(p => {
       handleArrowKeys()
     } else if (p.key === 'n') {
       await fetchNewBlocks()
+    } else if (p.key === 'S' && p.keyIsDown(p.SHIFT)) {
+      saveCanvasSnapshot()
     }
+  }
+
+  const saveCanvasSnapshot = () => {
+    // Temporarily disable gradient and highlights
+    const originalGradient = gradient
+    const originalSelectedIndex = selectedIndex
+    gradient = null
+    selectedIndex = -1
+
+    // Render the black-and-white version of the canvas
+    p.push()
+    p.background(255) // White background
+    renderCharGrid(cachedCharGrid, p, grid, fillChar)
+    p.pop()
+
+    // Generate the timestamped filename
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-:T]/g, '')
+      .split('.')[0]
+      .replace('Z', '')
+    const filename = `dragline.${timestamp}.png`
+
+    // Save the canvas
+    p.saveCanvas(filename, 'png')
+
+    // Restore original state
+    gradient = originalGradient
+    selectedIndex = originalSelectedIndex
+    display() // Redraw the original canvas
   }
 
   // Cycle through fill characters

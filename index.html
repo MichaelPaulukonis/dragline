@@ -1,36 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>d r a g l i n e</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>d r a g l i n e</title>
-</head>
-
-<body>
-  <script type="module" src="/src/dragline.js"></script>
-  <div id="info-box" class="info-box hidden">
-    <h1>D R A G L I N E</h1>
-    <ul>
-      <li>Click and drag to reposition text block on the grid.</li>
-      <li>Release the mouse to drop the text block in its new position.</li>
-      <li>UP/DOWN arrows to move the selected text block up or down in the display order 
-        (higher blocks have display priority).</li>
-      <li>RIGHT/LEFT arrow to add/remove a text block</li>
-      <li>SPACE - cycle through various fill-characters</li>
-      <li>r - reset with new blocks and new locations</li>
-      <li>n - load new blocks from Tumblr (!!!)</li>
-      <li><code>i</code> to show/hide this info box</li>
-    </ul>
-    <p>
-      Check out the code at <a href="https://github.com/MichaelPaulukonis/dragline.git">github.com/MichaelPaulukonis/dragline.git</a>.
-    </p>
-    <p>
-      Head over to <a href="http://michaelpaulukonis.com" target="_blank" rel="noopener">michaelpaulukonis.com</a> for more projects and information about me.
-    </p>
-    <button id="close-info-box" class="close-button">[ x ]</button>
-  </div>
-  <script type="module" src="/src/infobox.js"></script>
-</body>
+  <body>
+    <script type="module" src="/src/dragline.js"></script>
+    <div id="info-box" class="info-box hidden">
+      <h1>D R A G L I N E</h1>
+      <h3>a different kind of text landscape</h3>
+      <ul>
+        <li><strong>Mouse:</strong> Click and drag to move text blocks.</li>
+        <li><strong>Arrow Keys:</strong> Move selected block.</li>
+        <li>
+          <strong>SHIFT + Arrow Keys:</strong> Change block z-index (move up or
+          down).
+        </li>
+        <li><strong>SPACE:</strong> Cycle through fill characters.</li>
+        <li><strong>r:</strong> Reset text areas.</li>
+        <li>
+          <strong>SHIFT + S:</strong> Save a black-and-white copy of the canvas
+          as <code>dragline.YYYYMMDD.hhmmss.png</code>.
+        </li>
+        <li><strong>n:</strong> Fetch new blocks from Tumblr.</li>
+        <li><strong>i or ESC:</strong> Toggle this info box.</li>
+      </ul>
+      <p>
+        Check out the code at
+        <a href="https://github.com/MichaelPaulukonis/dragline.git"
+          >github.com/MichaelPaulukonis/dragline.git</a
+        >.
+      </p>
+      <p>
+        Head over to
+        <a href="http://michaelpaulukonis.com" target="_blank" rel="noopener"
+          >michaelpaulukonis.com</a
+        >
+        for more projects and information.
+      </p>
+      <button id="close-info-box" class="close-button">Close</button>
+    </div>
+    <script type="module" src="/src/infobox.js"></script>
+  </body>
 </html>
