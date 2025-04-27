@@ -28,6 +28,7 @@ await initializeBlocks()
 // Main p5.js instance
 new p5(p => {
   let textAreas = [] // Array to store text blocks
+  let previousTextAreas = [] // Track previous positions of text areas
   let dragging = false // Flag to track dragging state
   let selectedIndex = -1 // Index of the currently selected block
   let blockCount = 10 // Initial number of blocks
@@ -100,17 +101,17 @@ new p5(p => {
   // Main display function to render the canvas
   const display = () => {
     drawGradient()
-    drawDraggingHighlight()
+    drawDraggingHighlight() // Ensure highlight is drawn even when not dragging
     drawTextAreas()
   }
 
-  // Highlight the selected block while dragging
+  // Highlight the selected block while dragging or selected
   const drawDraggingHighlight = () => {
-    if (dragging) {
+    if (selectedIndex !== -1) { // Highlight if a block is selected
       const hue = calculateHue()
       const saturation = 50
       const brightness = 100
-      const alpha = 100
+      const alpha = dragging ? 100 : 50 // Full opacity while dragging, reduced opacity otherwise
 
       p.colorMode(p.HSB)
       p.fill(hue, saturation, brightness, alpha)
@@ -119,7 +120,7 @@ new p5(p => {
 
       p.colorMode(p.RGB)
     }
-    p.fill(0) // Remove redundant p.fill(0)
+    p.fill(0) // Ensure text rendering always has a valid fill color
   }
 
   // Calculate the hue for the dragging highlight
@@ -150,8 +151,13 @@ new p5(p => {
     if (!cachedCharGrid) {
       cachedCharGrid = createCharGrid(grid.rows, grid.cols, fillChar)
     }
-    populateCharGrid(cachedCharGrid, textAreas, fillChar, withinGrid)
+
+    // Pass previous and current text areas for optimized updates
+    populateCharGrid(cachedCharGrid, previousTextAreas, textAreas, fillChar, withinGrid)
     renderCharGrid(cachedCharGrid, p, grid, fillChar)
+
+    // Update previousTextAreas to match the current state
+    previousTextAreas = JSON.parse(JSON.stringify(textAreas))
   }
 
   // Check if a position is within the grid boundaries
@@ -206,6 +212,7 @@ new p5(p => {
 
     if (!blockClicked) {
       selectedIndex = -1 // Deselect if no block is clicked
+      p.fill(0) // Reset fill color to ensure text remains visible
     }
 
     display() // Update the display
@@ -218,9 +225,17 @@ new p5(p => {
     }
     if (dragging) {
       let area = textAreas[selectedIndex]
+      const prevX = area.x
+      const prevY = area.y
+
+      // Update the block's position
       area.x = Math.floor((p.mouseX - offsetX) / grid.cellSize)
       area.y = Math.floor((p.mouseY - offsetY) / grid.cellSize)
-      display() // Update the display while dragging
+
+      // Only update the display if the position has changed
+      if (area.x !== prevX || area.y !== prevY) {
+        display()
+      }
     }
   }
 
