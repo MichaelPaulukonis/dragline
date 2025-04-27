@@ -285,7 +285,22 @@ new p5(p => {
   }
 
   p.draw = () => {
-    if (!dragging) return
+    if (!dragging) {
+      if (selectedIndex !== -1) {
+        const area = textAreas[selectedIndex]
+        if (p.keyIsDown(p.UP_ARROW) && !p.keyIsDown(p.SHIFT)) {
+          area.y = Math.max(0, area.y - 1) // Move up
+        } else if (p.keyIsDown(p.DOWN_ARROW) && !p.keyIsDown(p.SHIFT)) {
+          area.y = Math.min(grid.rows - area.h, area.y + 1) // Move down
+        } else if (p.keyIsDown(p.LEFT_ARROW)) {
+          area.x = Math.max(0, area.x - 1) // Move left
+        } else if (p.keyIsDown(p.RIGHT_ARROW)) {
+          area.x = Math.min(grid.cols - area.w, area.x + 1) // Move right
+        }
+        display()
+      }
+      return
+    }
     display()
   }
 
@@ -333,6 +348,29 @@ new p5(p => {
     display() // to remove the highlight
   }
 
+  p.doubleClicked = () => {
+    if (isClickOnInfoBox(infoBox)) {
+      return false // Prevents p5js from handling this event
+    }
+    for (let i = 0; i < textAreas.length; i++) {
+      let area = textAreas[i]
+      const pixelX = area.x * grid.cellSize
+      const pixelY = area.y * grid.cellSize
+      const pixelW = area.w * grid.cellSize
+      const pixelH = area.h * grid.cellSize
+
+      if (
+        p.mouseX > pixelX &&
+        p.mouseX < pixelX + pixelW &&
+        p.mouseY > pixelY &&
+        p.mouseY < pixelY + pixelH
+      ) {
+        selectedIndex = i // Select the block
+        return
+      }
+    }
+  }
+
   p.windowResized = () => {
     p.resizeCanvas(p.windowWidth, p.windowHeight)
     setGradient() // Recreate the gradient when the window is resized
@@ -349,21 +387,53 @@ new p5(p => {
       textAreas.length = 0
       textAreas = setupTextAreas(textAreas) // Reinitialize with new unique blocks
       display()
-    } else if (p.keyCode === p.RIGHT_ARROW) {
-      // Add a new block
+    } else if (p.keyCode === p.RIGHT_ARROW && selectedIndex === -1) {
+      // Add a new block when no block is selected
       if (textAreas.length < blocks.length) {
         const usedIndices = new Set(textAreas.map(area => area.index)) // Track used indices
-        textAreas.push(createBlock(usedIndices))
+        textAreas.push(createBlock(usedIndices, Math.floor(grid.cols / 2), Math.floor(grid.rows / 2))) // Center new block
         blockCount++
         display()
       }
-    } else if (p.keyCode === p.LEFT_ARROW) {
-      // Remove the last block (minimum of 1 block)
+    } else if (p.keyCode === p.LEFT_ARROW && selectedIndex === -1) {
+      // Remove the last block (minimum of 1 block) when no block is selected
       if (textAreas.length > 1) {
         textAreas.pop()
         blockCount--
         display()
       }
+    } else if (selectedIndex !== -1) {
+      const area = textAreas[selectedIndex]
+      if (p.keyCode === p.UP_ARROW && !p.keyIsDown(p.SHIFT)) {
+        area.y = Math.max(0, area.y - 1) // Move up
+      } else if (p.keyCode === p.DOWN_ARROW && !p.keyIsDown(p.SHIFT)) {
+        area.y = Math.min(grid.rows - area.h, area.y + 1) // Move down
+      } else if (p.keyCode === p.LEFT_ARROW) {
+        area.x = Math.max(0, area.x - 1) // Move left
+      } else if (p.keyCode === p.RIGHT_ARROW) {
+        area.x = Math.min(grid.cols - area.w, area.x + 1) // Move right
+      } else if (p.keyCode === p.UP_ARROW && p.keyIsDown(p.SHIFT)) {
+        // Increase "height" (z-index)
+        if (selectedIndex > 0) {
+          [textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
+            textAreas[selectedIndex - 1],
+            textAreas[selectedIndex]
+          ]
+          selectedIndex--
+        }
+      } else if (p.keyCode === p.DOWN_ARROW && p.keyIsDown(p.SHIFT)) {
+        // Decrease "height" (z-index)
+        if (selectedIndex < textAreas.length - 1) {
+          [textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
+            textAreas[selectedIndex + 1],
+            textAreas[selectedIndex]
+          ]
+          selectedIndex++
+        }
+      } else if (p.keyCode === p.ENTER) {
+        selectedIndex = -1 // Deselect the block
+      }
+      display()
     } else if (p.key === 'n') {
       // Request another query to tumblrRandomPost using initializeBlocks
       try {
@@ -387,7 +457,7 @@ new p5(p => {
       // Move the text area up in the array (if not already at the top)
       if (selectedIndex < textAreas.length - 1) {
         // Swap the current text area with the one above it
-        ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
+        [textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
           textAreas[selectedIndex + 1],
           textAreas[selectedIndex]
         ]
@@ -399,7 +469,7 @@ new p5(p => {
       // Move the text area down in the array (if not already at the bottom)
       if (selectedIndex > 0) {
         // Swap the current text area with the one below it
-        ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
+        [textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
           textAreas[selectedIndex - 1],
           textAreas[selectedIndex]
         ]
