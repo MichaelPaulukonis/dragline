@@ -1,4 +1,4 @@
-export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks, fillChar, clusteringDistance, grid) {
+export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks, fillChar, clusteringDistance, grid, zIndex = 0) {
   const allIndices = Array.from(Array(blocks.length).keys()) // Cache all indices
   const availableIndices = allIndices.filter(i => !usedIndices.has(i))
 
@@ -38,12 +38,16 @@ export function createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks,
     x: x,
     y: y,
     w: width,
-    h: height
+    h: height,
+    zIndex: zIndex // Now accepts zIndex parameter
   }
 }
 
 export function setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, clusteringDistance) {
   const usedIndices = new Set(textAreas.map(area => area.index))
+  const baseZIndex = textAreas.length > 0 
+    ? Math.max(...textAreas.map(area => area.zIndex)) + 1 
+    : 0
 
   const clusterCenterX = Math.floor(Math.random() * grid.cols)
   const clusterCenterY = Math.floor(Math.random() * grid.rows)
@@ -53,7 +57,16 @@ export function setupTextAreas(textAreas, blocks, blockCount, grid, fillChar, cl
   if (blocksToAdd > 0) {
     const newBlocks = Array(blocksToAdd)
       .fill()
-      .map(() => createBlock(usedIndices, clusterCenterX, clusterCenterY, blocks, fillChar, clusteringDistance, grid))
+      .map((_, idx) => createBlock(
+        usedIndices,
+        clusterCenterX,
+        clusterCenterY,
+        blocks,
+        fillChar,
+        clusteringDistance,
+        grid,
+        baseZIndex + idx // Assign sequential z-indices
+      ))
     newTextAreas.push(...newBlocks)
   }
 

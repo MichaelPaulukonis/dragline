@@ -138,9 +138,16 @@ new p5(p => {
     const MIN_HUE = 240 // Blue
     const MAX_HUE = 60 // Yellow
     const HUE_RANGE = MAX_HUE - MIN_HUE
-    return (
-      MAX_HUE - ((selectedIndex * (HUE_RANGE / textAreas.length)) % HUE_RANGE)
-    )
+
+    // Get the full range of z-indices
+    const zIndices = textAreas.map(area => area.zIndex)
+    const minZ = Math.min(...zIndices)
+    const maxZ = Math.max(...zIndices)
+    const zRange = maxZ - minZ || 1 // Avoid division by zero
+
+    // Normalize current z-index to [0,1] range and map to hue
+    const normalizedZ = (textAreas[selectedIndex].zIndex - minZ) / zRange
+    return MAX_HUE - (normalizedZ * HUE_RANGE)
   }
 
   // Draw a rectangle around the selected block
@@ -162,11 +169,13 @@ new p5(p => {
       cachedCharGrid = createCharGrid(grid.rows, grid.cols, fillChar)
     }
 
-    // Pass previous and current text areas for optimized updates
+    // Sort by z-index before rendering
+    const sortedAreas = [...textAreas].sort((a, b) => a.zIndex - b.zIndex)
+
     populateCharGrid(
       cachedCharGrid,
       previousTextAreas,
-      textAreas,
+      sortedAreas, // Pass sorted array for rendering
       fillChar,
       withinGrid
     )
@@ -365,47 +374,48 @@ new p5(p => {
   }
 
   const handleMovementKeys = area => {
-    if (p.keyIsDown(p.UP_ARROW) && !p.keyIsDown(p.SHIFT)) {
-      area.y = Math.max(0, area.y - 1) // Move up
-    } else if (p.keyIsDown(p.DOWN_ARROW) && !p.keyIsDown(p.SHIFT)) {
-      area.y = Math.min(grid.rows - area.h, area.y + 1) // Move down
+    const isShiftPressed = p.keyIsDown(p.SHIFT)
+    if (isShiftPressed) return
+
+    if (p.keyIsDown(p.UP_ARROW)) {
+      area.y = Math.max(0, area.y - 1) // up
+    } else if (p.keyIsDown(p.DOWN_ARROW)) {
+      area.y = Math.min(grid.rows - area.h, area.y + 1) // down
     } else if (p.keyIsDown(p.LEFT_ARROW)) {
-      area.x = Math.max(0, area.x - 1) // Move left
+      area.x = Math.max(0, area.x - 1) // left
     } else if (p.keyIsDown(p.RIGHT_ARROW)) {
-      area.x = Math.min(grid.cols - area.w, area.x + 1) // Move right
+      area.x = Math.min(grid.cols - area.w, area.x + 1) // right
     }
   }
 
-  // Handle arrow key movements
+  // Handle arrow key (non-movement) events
   function handleArrowKeys () {
     const area = textAreas[selectedIndex]
     const isShiftPressed = p.keyIsDown(p.SHIFT)
 
     if (isShiftPressed) {
       if (p.keyCode === p.LEFT_ARROW) {
-        selectedIndex =
-          (selectedIndex - 1 + textAreas.length) % textAreas.length
+        selectedIndex = (selectedIndex - 1 + textAreas.length) % textAreas.length
       } else if (p.keyCode === p.RIGHT_ARROW) {
         selectedIndex = (selectedIndex + 1) % textAreas.length
-      } else if (p.keyCode === p.UP_ARROW) {
-        if (selectedIndex > 0) {
-          ;[textAreas[selectedIndex], textAreas[selectedIndex - 1]] = [
-            textAreas[selectedIndex - 1],
-            textAreas[selectedIndex]
-          ]
-          selectedIndex--
-        }
-      } else if (p.keyCode === p.DOWN_ARROW) {
-        if (selectedIndex < textAreas.length - 1) {
-          ;[textAreas[selectedIndex], textAreas[selectedIndex + 1]] = [
-            textAreas[selectedIndex + 1],
-            textAreas[selectedIndex]
-          ]
-          selectedIndex++
+      } else if (p.keyCode === p.UP_ARROW || p.keyCode === p.DOWN_ARROW) {
+        // Sort areas by z-index to find adjacent blocks
+        const sortedAreas = [...textAreas].sort((a, b) => a.zIndex - b.zIndex)
+        const currentZIndex = area.zIndex
+        const currentPosition = sortedAreas.findIndex(a => a.zIndex === currentZIndex)
+        
+        if (p.keyCode === p.UP_ARROW && currentPosition < sortedAreas.length - 1) {
+          // Swap z-index with the block above (higher z-index)
+          const temp = area.zIndex
+          area.zIndex = sortedAreas[currentPosition + 1].zIndex
+          sortedAreas[currentPosition + 1].zIndex = temp
+        } else if (p.keyCode === p.DOWN_ARROW && currentPosition > 0) {
+          // Swap z-index with the block below (lower z-index)
+          const temp = area.zIndex
+          area.zIndex = sortedAreas[currentPosition - 1].zIndex
+          sortedAreas[currentPosition - 1].zIndex = temp
         }
       }
-    } else {
-      handleMovementKeys(area)
     }
     display()
   }
