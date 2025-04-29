@@ -147,7 +147,7 @@ new p5(p => {
 
     // Normalize current z-index to [0,1] range and map to hue
     const normalizedZ = (textAreas[selectedIndex].zIndex - minZ) / zRange
-    return MAX_HUE - (normalizedZ * HUE_RANGE)
+    return MAX_HUE - normalizedZ * HUE_RANGE
   }
 
   // Draw a rectangle around the selected block
@@ -273,7 +273,16 @@ new p5(p => {
 
   // Handle key press events
   p.keyPressed = async () => {
-    if (p.key === 'i' || p.keyCode === p.ESCAPE) {
+    if (selectedIndex !== -1 && (p.keyCode === p.DELETE || p.keyCode === p.BACKSPACE) && textAreas.length > 1) {
+      textAreas.splice(selectedIndex, 1)
+      blockCount--
+      selectedIndex = -1 // Deselect after deletion
+      fieldIsDirty = true
+      display()
+    } else if (selectedIndex !== -1 && (p.keyCode === p.ESCAPE || p.keyCode === p.ENTER)) {
+      selectedIndex = -1 // Deselect 
+      display()
+    } else if (p.key === 'i' || p.keyCode === p.ESCAPE) {
       toggleInfoBox()
     } else if (p.key === ' ') {
       cycleFillChar()
@@ -395,16 +404,22 @@ new p5(p => {
 
     if (isShiftPressed) {
       if (p.keyCode === p.LEFT_ARROW) {
-        selectedIndex = (selectedIndex - 1 + textAreas.length) % textAreas.length
+        selectedIndex =
+          (selectedIndex - 1 + textAreas.length) % textAreas.length
       } else if (p.keyCode === p.RIGHT_ARROW) {
         selectedIndex = (selectedIndex + 1) % textAreas.length
       } else if (p.keyCode === p.UP_ARROW || p.keyCode === p.DOWN_ARROW) {
         // Sort areas by z-index to find adjacent blocks
         const sortedAreas = [...textAreas].sort((a, b) => a.zIndex - b.zIndex)
         const currentZIndex = area.zIndex
-        const currentPosition = sortedAreas.findIndex(a => a.zIndex === currentZIndex)
-        
-        if (p.keyCode === p.UP_ARROW && currentPosition < sortedAreas.length - 1) {
+        const currentPosition = sortedAreas.findIndex(
+          a => a.zIndex === currentZIndex
+        )
+
+        if (
+          p.keyCode === p.UP_ARROW &&
+          currentPosition < sortedAreas.length - 1
+        ) {
           // Swap z-index with the block above (higher z-index)
           const temp = area.zIndex
           area.zIndex = sortedAreas[currentPosition + 1].zIndex
