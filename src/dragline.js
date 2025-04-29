@@ -34,7 +34,7 @@ new p5(p => {
   let dragging = false // Flag to track dragging state
   let selectedIndex = -1 // Index of the currently selected block
   let blockCount = 10 // Initial number of blocks
-  let clusteringDistance = 5 // Controls clustering tightness
+  let clusteringDistance = 30 // Controls clustering tightness
   let fieldIsDirty = false // Flag to redraw entire field
   let offsetX, offsetY // Offset for dragging
   let gradient // Gradient for the background
@@ -70,7 +70,7 @@ new p5(p => {
     p.createCanvas(p.windowWidth, p.windowHeight)
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
-    clusteringDistance = Math.floor(grid.cols / 2) // Cache this value
+    // clusteringDistance = Math.floor(grid.cols / 2) // Cache this value
     p.textFont(monospaceFont)
     p.noStroke()
     setGradient()
@@ -254,11 +254,10 @@ new p5(p => {
       const prevX = area.x
       const prevY = area.y
 
-      // Update the block's position
-      area.x = Math.floor((p.mouseX - offsetX) / grid.cellSize)
-      area.y = Math.floor((p.mouseY - offsetY) / grid.cellSize)
+      // Ensure integer values with Math.round instead of Math.floor
+      area.x = Math.round((p.mouseX - offsetX) / grid.cellSize)
+      area.y = Math.round((p.mouseY - offsetY) / grid.cellSize)
 
-      // Only update the display if the position has changed
       if (area.x !== prevX || area.y !== prevY) {
         display()
       }
