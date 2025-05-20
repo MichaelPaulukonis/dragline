@@ -11,9 +11,9 @@ describe('buildGrid', () => {
     // Ensure all tokens are present in the grid
     // this may fail, since spacing can result in split tokens
     const gridString = grids[0].join('')
-    tokens.forEach(token => {
+    for (const token of tokens) {
       expect(gridString).toContain(token)
-    })
+    }
   })
 
   test('should create multiple grids when tokens exceed one grid', () => {
@@ -27,9 +27,9 @@ describe('buildGrid', () => {
     // except ... all tokens are identical, so we don't know that ALL are present.
     // count them? count them!
     const allGridsString = grids.map(grid => grid.join('\n')).join('\n')
-    tokens.forEach(token => {
+    for (const token of tokens) {
       expect(allGridsString).toContain(token)
-    })
+    }
   })
 
   test('should split tokens across lines if they exceed the row boundary', () => {

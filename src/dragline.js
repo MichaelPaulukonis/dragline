@@ -36,14 +36,15 @@ new p5(p => {
   let blockCount = 10 // Initial number of blocks
   let clusteringDistance = 30 // Controls clustering tightness
   let fieldIsDirty = false // Flag to redraw entire field
-  let offsetX, offsetY // Offset for dragging
+  let offsetX
+  let offsetY // Offset for dragging
   let gradient // Gradient for the background
-  let grid = {
+  const grid = {
     cols: 0,
     rows: 0,
     cellSize: 15 // Size of each grid cell
   }
-  let fillChars = ' .-|:*+' // Characters used for filling text blocks
+  const fillChars = ' .-|:*+' // Characters used for filling text blocks
   let fillChar = fillChars[0] // Default fill character
   let monospaceFont = null // Font for rendering text
 
@@ -61,7 +62,7 @@ new p5(p => {
   })
 
   // Preload assets (e.g., fonts)
-  p.preload = function () {
+  p.preload = () => {
     monospaceFont = p.loadFont('saxmono.ttf')
   }
 
@@ -96,9 +97,18 @@ new p5(p => {
 
   // Create a gradient for the background
   const setGradient = () => {
-    gradient = p.drawingContext.createLinearGradient(0, 0, p.width, 0)
-    gradient.addColorStop(0, '#f8b500')
-    gradient.addColorStop(1, '#fceabb')
+    // Calculate angle in radians (45 degrees)
+    const angle = Math.PI / 4; 
+    
+    // Calculate start and end points based on angle
+    const startX = p.width / 2 - Math.cos(angle) * p.width / 2;
+    const startY = p.height / 2 - Math.sin(angle) * p.height / 2;
+    const endX = p.width / 2 + Math.cos(angle) * p.width / 2;
+    const endY = p.height / 2 + Math.sin(angle) * p.height / 2;
+    
+    gradient = p.drawingContext.createLinearGradient(startX, startY, endX, endY);
+    gradient.addColorStop(0, '#fe5196');
+    gradient.addColorStop(1, '#f77062');
   }
 
   // Draw the gradient background
@@ -250,7 +260,7 @@ new p5(p => {
       return false // Prevents p5js from handling this event
     }
     if (dragging) {
-      let area = textAreas[selectedIndex]
+      const area = textAreas[selectedIndex]
       const prevX = area.x
       const prevY = area.y
 
