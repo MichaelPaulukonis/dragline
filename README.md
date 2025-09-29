@@ -1,97 +1,217 @@
-# dragline
+# dragline · a draggable text landscape
 
-An experimental text display using HTML canvas to bypass rendering differences in browsers.
+[![Project Status](https://img.shields.io/badge/status-in_development-orange.svg)](#project-status) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-6f42c1.svg)](package.json) [![Built with Vite](https://img.shields.io/badge/built_with-Vite-646cff.svg)](https://vitejs.dev/)
 
-TBH this "solves" a problem that has bothered me for over a decade - draggable, perfectly aligned (monospaced) text. Not really sure why I never considered the canvas until now.
+Dragline is an interactive poem-machine that scatters monospaced text blocks across a canvas and invites you to rearrange them into new constellations. Every composition is a miniature collaboration between generative code, Tumblr-fueled corpora, and your hands on the mouse.
 
-It's not so much a tool as it is a piece of its own.
+> “It’s not so much a tool as it is a text of its own.” — the project’s guiding principle
 
-## TODO
+**Live build:** <https://michaelpaulukonis.github.io/dragline>  ·  **Repository snapshot:** [`docs/reference/dragline-repository-snapshot.md`](docs/reference/dragline-repository-snapshot.md)
 
-- ~~connect to tumblr for text for now~~
-- save screen
-  - without the background
-  - click-drag for a defined area to use a canvas?
-- ability to remove specific block (DEL while selected)
-  - tricky. Maybe have a "SELECT" mode, where we move from area to area with keys
-  - this would make up/down easier to deal with
-  - and we could "replace" the individual block
-  - or clone it (why would we WANT to ????)
-  - or edit (uuhmmmmmmm)
-- auto-movement?
-  - this may be a separate project
-- better clustering
-- display of all blocks
+---
 
-## text sources
+## Table of Contents
 
-- The poetry-bot may be too esoteric
-- https://newsdata.io/pricing 200 requests per dat/ 10 articles per request for free
-- https://www.gutenberg.org/ for public domain books
-- https://pypi.org/project/Gutenberg/
-- https://github.com/jpmulligan/random-gutenberg
-- https://github.com/public-api-lists/public-api-lists
+1. [Getting Started](#getting-started)
+2. [Usage](#usage)
+3. [Features & Capabilities](#features--capabilities)
+4. [Development Setup](#development-setup)
+5. [Contributing](#contributing)
+6. [Project Structure](#project-structure)
+7. [Troubleshooting & FAQ](#troubleshooting--faq)
+8. [Additional Info](#additional-info)
+9. [Credits & Resources](#credits--resources)
 
+---
 
-## GPT feedback
+## Getting Started
 
-Here are some observations and potential issues with the project, both from a coding and artistic perspective:
+### Prerequisites
 
-1. Performance Concerns with Large Grids
-Issue: The populateCharGrid function resets the entire grid on every frame, even if only a small portion of the grid changes.
-Impact: This can lead to performance bottlenecks, especially with large grids or many text blocks.
-Suggestion: Optimize the grid update logic to reset and redraw only the affected areas. For example, track the previous and current positions of blocks and update only those regions.
-2. Limited Artistic Flexibility
-Issue: The fillChars array (' .-|:*+') is hardcoded, limiting the artistic possibilities for text block designs.
-Impact: Users cannot easily customize the visual style of the blocks.
-Suggestion: Allow users to dynamically configure the fillChars array through a UI or configuration file. This would make the project more flexible and engaging.
-3. Gradient Background is Static
-Issue: The gradient background is static and does not change dynamically.
-Impact: While visually appealing, it may feel monotonous over time.
-Suggestion: Introduce dynamic gradients that change based on user interactions, time, or block movements. For example, the gradient could shift colors when blocks are dragged or added.
-4. No Undo/Redo Functionality
-Issue: There is no way to undo or redo actions like moving blocks, adding blocks, or resetting the grid.
-Impact: This limits usability, especially for users experimenting with block arrangements.
-Suggestion: Implement an undo/redo stack to track user actions and allow them to revert or reapply changes.
-5. Block Overlap Handling
-Issue: There is no explicit handling of overlapping blocks. If two blocks occupy the same grid space, the rendering behavior depends on the order in the textAreas array.
-Impact: This can lead to visual inconsistencies or unexpected behavior.
-Suggestion: Add logic to detect and handle overlapping blocks. For example, prevent overlaps or allow users to control the z-index of blocks.
-6. Accessibility Concerns
-Issue: The project relies heavily on mouse and keyboard interactions, but there is no support for accessibility features like screen readers or alternative input methods.
-Impact: This limits the project's usability for users with disabilities.
-Suggestion: Add ARIA roles and labels for UI elements like the info box. Consider adding touch support for mobile devices.
-7. Artistic Feedback
-Observation: The project has a strong foundation for creating visually engaging text-based art. However:
-The static grid layout may feel restrictive for more dynamic or freeform artistic expressions.
-The clustering logic (clusteringDistance) is interesting but could be expanded to allow more complex patterns or user-defined layouts.
-Suggestion: Introduce features like:
-Animated transitions for block movements.
-Non-grid-based layouts (e.g., circular or spiral arrangements).
-Randomized or user-defined color schemes for blocks.
-8. Code Maintainability
-Issue: While the code is modularized, some functions (e.g., handleArrowKeys, populateCharGrid) are still relatively large and handle multiple responsibilities.
-Impact: This makes the code harder to read, test, and maintain.
-Suggestion: Further break down large functions into smaller, single-responsibility functions. For example:
-Split handleArrowKeys into separate functions for movement and z-index changes.
-Refactor populateCharGrid to separate grid resetting and block population logic.
-9. Lack of User Feedback
-Issue: There is no visual or auditory feedback for certain actions, such as adding or removing blocks.
-Impact: This can make the user experience feel less interactive and engaging.
-Suggestion: Add subtle animations, sound effects, or visual cues (e.g., a flash or highlight) when blocks are added, removed, or moved.
-10. Testing and Debugging
-Issue: There is no indication of automated tests or debugging tools in the project.
-Impact: This makes it harder to ensure the code's correctness and stability as the project grows.
-Suggestion: Add unit tests for core functions (e.g., createBlock, populateCharGrid) and use debugging tools like console.assert or a logging library to catch issues during development.
-Summary of Suggestions:
-Optimize grid updates to improve performance.
-Allow dynamic customization of fillChars and other artistic elements.
-Introduce dynamic gradients and animations for a more engaging experience.
-Add undo/redo functionality for better usability.
-Handle block overlaps explicitly to avoid visual inconsistencies.
-Improve accessibility and support for alternative input methods.
-Expand artistic features like layouts, color schemes, and animations.
-Refactor large functions for better maintainability.
-Add user feedback for actions like adding or removing blocks.
-Implement automated tests and debugging tools.
-Would you like me to implement any of these suggestions?
+- Node.js ≥ 18 (Vite 6 requires a modern runtime)
+- npm ≥ 9 (bundled with recent Node releases)
+- Optional: Tumblr API key if you want to swap in your own text source
+
+### Installation
+
+```bash
+git clone https://github.com/MichaelPaulukonis/dragline.git
+cd dragline
+npm install
+```
+
+### Quick Start
+
+```bash
+npm run dev
+```
+
+Visit the printed URL (typically <http://localhost:5173>) and start rearranging blocks.
+
+### Common Setup Hiccups
+
+| Issue | Why it happens | Fix |
+| --- | --- | --- |
+| `npm run dev` complains about Node version | Node < 18 | Upgrade Node (e.g., via nvm: `nvm install 20 && nvm use 20`). |
+| Tumblr requests fail with 429/401 | Tumblr rate limits or key revoked | Dragline falls back to bundled JSON blocks; add your own API key in `src/tumblr-random.js` if needed. |
+| Canvas looks empty | Fallback data not loaded yet | Wait a moment or press **`n`** to fetch a new batch. |
+
+---
+
+## Usage
+
+### Core Interaction
+
+| Action | Gesture |
+| --- | --- |
+| Move a block | Click + drag |
+| Add a block | Right arrow |
+| Remove the most recent block | Left arrow |
+| Delete selected block | Delete/Backspace |
+| Raise/lower z-index | Shift + Up / Shift + Down |
+| Cycle focus between blocks | Shift + Left / Shift + Right |
+| Cycle fill characters | Space |
+| Reset layout | `r` |
+| Fetch fresh Tumblr corpus | `n` |
+| Toggle info box | `i` or Escape |
+| Save monochrome snapshot | Shift + `S` |
+
+### Advanced Play
+
+- Edit the fill character palette in `src/dragline.js` (`fillChars`) for noisier or calmer compositions.
+- Swap in your own fallback corpus by replacing `src/grids.*.json` with exported grids from previous sessions.
+- Tweak clustering distance inside `src/blocks.js` to tighten or loosen the initial scatter.
+
+### Configuration & Environment
+
+The default Tumblr credentials in `src/tumblr-random.js` are public. To use your own key:
+
+```js
+const settings = {
+  blogName: 'your-blog.tumblr.com',
+  appKey: import.meta.env.VITE_TUMBLR_KEY,
+  debug: false
+}
+```
+
+Add the key to a `.env` file and expose it via `VITE_TUMBLR_KEY`. Remember that Vite embeds variables starting with `VITE_` at build time.
+
+### Tumblr API Overview
+
+Dragline pulls posts using `GET https://api.tumblr.com/v2/blog/{blogName}/posts?api_key=...`. Responses are parsed with the browser’s `DOMParser` to strip HTML tags. When Tumblr is unreachable, the project falls back to locally stored grids so you can continue composing offline.
+
+---
+
+## Features & Capabilities
+
+### What’s delightful right now
+
+- 🎲 **Generative scatter** – Every load throws text fragments into a unique constellation.
+- 🖱️ **Direct manipulation** – Drag blocks, layer them, and watch characters compete for canvas space.
+- 🎚️ **On-the-fly remixing** – Cycle fill characters, reset layouts, or grab a high-contrast PNG snapshot.
+- 🔄 **Live corpora** – Pull fresh text from Tumblr or lean on bundled archives when offline.
+
+### Why Dragline is different
+
+Unlike traditional text editors or poetry bots, Dragline treats text as spatial material. It rewards playful rearrangement and gives immediate visual feedback through z-index layering and grid-based rendering.
+
+### Roadmap
+
+Improvement ideas live as individual notes under [`docs/01_backlog/`](docs/01_backlog/). Highlights include richer export tools, selective block editing, animated drift, smarter clustering, and an inventory-style block browser.
+
+---
+
+## Development Setup
+
+### Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Produce production bundle in `dist/` |
+| `npm run preview` | Preview the build locally |
+| `npm run deploy` | Publish to GitHub Pages via `gh-pages` |
+| `npm test` | Run Jest suite (currently covers grid builder) |
+
+### Workflow Notes
+
+- Vite hot-module reload keeps the canvas responsive—no manual refresh needed.
+- Jest targets logic-only modules. When you extract new utilities from p5 flows, add tests under `tests/`.
+- For styling tweaks, edit `css/style.css` and `css/infobox.css`; no frameworks are involved.
+
+### Debugging Tips
+
+- Enable `debug: true` in `src/tumblr-random.js` to log API responses.
+- Use the browser console to inspect `textAreas` and experiment with manual block mutations.
+- Set breakpoints inside `populateCharGrid` to understand layering behaviour.
+
+---
+
+## Contributing
+
+Dragline is an open sketch—new ideas are always welcome.
+
+1. Fork the repository and create a feature branch (`git checkout -b feature/your-idea`).
+2. Keep changes aligned with the [coding guidelines](.github/copilot-instructions.md).
+3. Run `npm test` (and add new tests if you touch logic-heavy modules).
+4. Open a pull request describing the creative intent and any visual quirks to watch for.
+
+If you spot a bug or have a feature idea, open an issue or drop a note in the backlog by adding a markdown file under `docs/01_backlog/`.
+
+---
+
+## Project Structure
+
+```
+src/
+├─ dragline.js         # p5 orchestration: fetch, input, rendering
+├─ blocks.js           # Block creation, positioning, z-indexing
+├─ grid.js             # Character grid creation and rendering helpers
+├─ tumblr-random.js    # Tumblr API integration + fallback logic
+└─ text-grid/          # Tokenize → gridify → split corpus
+css/
+├─ style.css           # Base canvas and page styling
+└─ infobox.css         # Floating instructions panel
+docs/
+├─ 01_backlog/         # Potential future enhancements
+├─ reference/          # Architecture notes and repository snapshots
+└─ ...                 # Stage-gate planning scaffolding
+tests/
+└─ buildGrid.test.js   # Jest coverage for grid construction
+```
+
+For a deeper architectural overview, read [`docs/reference/dragline-repository-snapshot.md`](docs/reference/dragline-repository-snapshot.md).
+
+---
+
+## Troubleshooting & FAQ
+
+**Q: The canvas is blank—did something break?**  
+A: Probably not. Press `n` to fetch a new set of blocks or check the console for Tumblr rate-limit messages.
+
+**Q: Can I use my own text source?**  
+A: Absolutely. Point `blogName` in `src/tumblr-random.js` to another Tumblr blog or swap the fetch entirely for local files.
+
+**Q: How do I capture a composition without the pink gradient?**  
+A: Press Shift + `S` to save a monochrome PNG. For finer control, see the backlog idea “[Save Screen Export Options](docs/01_backlog/save-screen-export.md).”
+
+**Q: Where can I ask questions?**  
+A: Open a GitHub issue.
+
+---
+
+## Additional Info
+
+- **License:** [MIT](LICENSE)
+- **Changelog:** Coming soon—follow updates via repository commits and reference snapshots.
+- **Project Status:** In development; expect playful instability.
+
+---
+
+## Credits & Resources
+
+- Built with [p5.js](https://p5js.org/) and [Vite](https://vitejs.dev/).
+- Tumblr corpus courtesy of <https://poeticalbot.tumblr.com> (and whatever blog you plug in).
+- Inspiration and ongoing architectural notes live inside [`docs/reference/`](docs/reference/).
+
+Happy dragging! 🐛
