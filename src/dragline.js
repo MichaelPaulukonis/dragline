@@ -3,10 +3,26 @@ import '../css/infobox.css'
 
 await import('p5js-wrapper')
 import gridify from './text-grid'
-import { createCharGrid, populateCharGrid, renderCharGrid } from './grid'
+import {
+  createCharGrid,
+  populateCharGrid,
+  renderCharGrid,
+  gridBoundsToPixels
+} from './grid'
 import { createBlock, setupTextAreas } from './blocks'
 const fallbackBlocks = await import('./grids.20250403T123247766Z.json')
 import tumblrRandomPost from './tumblr-random'
+import {
+  createSelectionState,
+  enterSelectionMode,
+  exitSelectionMode,
+  getActiveBounds,
+  handlePointerDragged as handleSelectionPointerDragged,
+  handlePointerPressed as handleSelectionPointerPressed,
+  handlePointerReleased as handleSelectionPointerReleased,
+  nudgeSelection,
+  renderSelectionOverlay
+} from './selection'
 
 let corpus
 let blocks
@@ -44,9 +60,11 @@ new p5(p => {
     rows: 0,
     cellSize: 15 // Size of each grid cell
   }
+  const TEXT_SIZE_ADJUSTMENT = 4
   const fillChars = ' .-|:*+' // Characters used for filling text blocks
   let fillChar = fillChars[0] // Default fill character
   let monospaceFont = null // Font for rendering text
+  let selectionState = createSelectionState(grid)
 
   // DOM elements for the info box
   const infoBox = document.getElementById('info-box')
@@ -68,6 +86,7 @@ new p5(p => {
 
   // Setup the canvas and initialize the grid and text areas
   p.setup = () => {
+    p.pixelDensity(2)
     p.createCanvas(p.windowWidth, p.windowHeight)
     grid.cols = Math.floor(p.width / grid.cellSize)
     grid.rows = Math.floor(p.height / grid.cellSize)
@@ -76,7 +95,6 @@ new p5(p => {
     p.noStroke()
     setGradient()
 
-    const TEXT_SIZE_ADJUSTMENT = 4
     const textSize = grid.cellSize + TEXT_SIZE_ADJUSTMENT // Cache this value
     p.textSize(textSize)
     p.textAlign(p.LEFT, p.TOP)
@@ -113,6 +131,11 @@ new p5(p => {
 
   // Draw the gradient background
   function drawGradient () {
+    if (!gradient) {
+      p.background(255)
+      return
+    }
+
     p.drawingContext.fillStyle = gradient
     p.drawingContext.fillRect(0, 0, p.width, p.height)
   }
@@ -122,6 +145,7 @@ new p5(p => {
     drawGradient()
     drawDraggingHighlight() // Ensure highlight is drawn even when not dragging
     drawTextAreas()
+    renderSelectionOverlay(p, selectionState, grid)
   }
 
   // Highlight the selected block while dragging or selected
@@ -174,26 +198,31 @@ new p5(p => {
   let cachedCharGrid = null // Cache for the character grid
 
   // Draw all text areas on the canvas
-  const drawTextAreas = () => {
+  const refreshCharGrid = () => {
     if (!cachedCharGrid || fieldIsDirty) {
       cachedCharGrid = createCharGrid(grid.rows, grid.cols, fillChar)
+      previousTextAreas = []
     }
 
-    // Sort by z-index before rendering
     const sortedAreas = [...textAreas].sort((a, b) => a.zIndex - b.zIndex)
 
     populateCharGrid(
       cachedCharGrid,
       previousTextAreas,
-      sortedAreas, // Pass sorted array for rendering
+      sortedAreas,
       fillChar,
       withinGrid
     )
-    renderCharGrid(cachedCharGrid, p, grid, fillChar)
 
-    // Update previousTextAreas to match the current state
-    previousTextAreas = JSON.parse(JSON.stringify(textAreas))
+    previousTextAreas = JSON.parse(JSON.stringify(sortedAreas))
     fieldIsDirty = false
+
+    return cachedCharGrid
+  }
+
+  const drawTextAreas = () => {
+    refreshCharGrid()
+    renderCharGrid(cachedCharGrid, p, grid, fillChar)
   }
 
   // Check if a position is within the grid boundaries
@@ -221,6 +250,12 @@ new p5(p => {
   p.mousePressed = () => {
     if (isClickOnInfoBox(infoBox)) {
       return false // Prevents p5js from handling this event
+    }
+
+    if (selectionState.isActive) {
+      handleSelectionPointerPressed(selectionState, { x: p.mouseX, y: p.mouseY }, grid)
+      display()
+      return false
     }
 
     let blockClicked = false
@@ -259,6 +294,11 @@ new p5(p => {
     if (isClickOnInfoBox(infoBox)) {
       return false // Prevents p5js from handling this event
     }
+    if (selectionState.isActive) {
+      handleSelectionPointerDragged(selectionState, { x: p.mouseX, y: p.mouseY }, grid)
+      display()
+      return false
+    }
     if (dragging) {
       const area = textAreas[selectedIndex]
       const prevX = area.x
@@ -276,12 +316,72 @@ new p5(p => {
 
   // Handle mouse release events
   p.mouseReleased = () => {
+    if (selectionState.isActive) {
+      handleSelectionPointerReleased(selectionState)
+      display()
+      return false
+    }
     dragging = false
     display() // Remove the highlight
   }
 
   // Handle key press events
-  p.keyPressed = async () => {
+  p.keyPressed = async event => {
+    const keyChar = typeof p.key === 'string' ? p.key.toUpperCase() : ''
+    const code = event?.code ?? ''
+    const isSKey = code === 'KeyS' || keyChar === 'S'
+
+    const isShiftDown = event?.shiftKey ?? p.keyIsDown(p.SHIFT)
+    const isAltDown = event?.altKey ?? p.keyIsDown(p.ALT)
+
+    const isShiftSave = isSKey && isShiftDown
+    const isSelectionToggle = isShiftSave && isAltDown
+
+    if (selectionState.isActive) {
+      if (p.keyCode === p.ESCAPE) {
+        exitSelectionMode(selectionState)
+        display()
+        return
+      }
+
+      if (isShiftSave || p.keyCode === p.ENTER) {
+        saveComposition(getActiveBounds(selectionState))
+        exitSelectionMode(selectionState)
+        display()
+        return
+      }
+
+      const modifier = isShiftDown ? 2 : 1
+
+      if (p.keyCode === p.LEFT_ARROW) {
+        nudgeSelection(selectionState, -1 * modifier, 0, grid)
+        display()
+      } else if (p.keyCode === p.RIGHT_ARROW) {
+        nudgeSelection(selectionState, 1 * modifier, 0, grid)
+        display()
+      } else if (p.keyCode === p.UP_ARROW) {
+        nudgeSelection(selectionState, 0, -1 * modifier, grid)
+        display()
+      } else if (p.keyCode === p.DOWN_ARROW) {
+        nudgeSelection(selectionState, 0, 1 * modifier, grid)
+        display()
+      }
+      return
+    }
+
+    if (isSelectionToggle) {
+      dragging = false
+      selectedIndex = -1
+      enterSelectionMode(selectionState, grid)
+      display()
+      return
+    }
+
+    if (isShiftSave) {
+      saveComposition()
+      return
+    }
+
     if (selectedIndex !== -1 && (p.keyCode === p.DELETE || p.keyCode === p.BACKSPACE) && textAreas.length > 1) {
       textAreas.splice(selectedIndex, 1)
       blockCount--
@@ -289,7 +389,7 @@ new p5(p => {
       fieldIsDirty = true
       display()
     } else if (selectedIndex !== -1 && (p.keyCode === p.ESCAPE || p.keyCode === p.ENTER)) {
-      selectedIndex = -1 // Deselect 
+      selectedIndex = -1 // Deselect
       display()
     } else if (p.key === 'i' || p.keyCode === p.ESCAPE) {
       toggleInfoBox()
@@ -309,39 +409,44 @@ new p5(p => {
       handleArrowKeys()
     } else if (p.key === 'n') {
       await fetchNewBlocks()
-    } else if (p.key === 'S' && p.keyIsDown(p.SHIFT)) {
-      saveCanvasSnapshot()
     }
   }
 
-  const saveCanvasSnapshot = () => {
-    // Temporarily disable gradient and highlights
+  const saveComposition = bounds => {
+    refreshCharGrid()
+
     const originalGradient = gradient
     const originalSelectedIndex = selectedIndex
     gradient = null
     selectedIndex = -1
 
-    // Render the black-and-white version of the canvas
     p.push()
-    p.background(255) // White background
+    p.background(255)
     renderCharGrid(cachedCharGrid, p, grid, fillChar)
     p.pop()
 
-    // Generate the timestamped filename
     const timestamp = new Date()
       .toISOString()
       .replace(/[-:T]/g, '')
       .split('.')[0]
       .replace('Z', '')
-    const filename = `dragline.${timestamp}.png`
 
-    // Save the canvas
-    p.saveCanvas(filename, 'png')
+    const suffix = bounds ? '.selection' : ''
+    const filename = `dragline${suffix}.${timestamp}.png`
 
-    // Restore original state
+    if (bounds) {
+      const { x, y, width, height } = gridBoundsToPixels(bounds, grid.cellSize)
+      // oooh, get is both slow and poorer quality IIRC.....
+      // not an issue for now
+      const cropped = p.get(x, y, width, height)
+      cropped.save(filename, 'png')
+    } else {
+      p.saveCanvas(filename, 'png')
+    }
+
     gradient = originalGradient
     selectedIndex = originalSelectedIndex
-    display() // Redraw the original canvas
+    display()
   }
 
   // Cycle through fill characters
@@ -468,6 +573,10 @@ new p5(p => {
 
   // Handle continuous key presses for movement
   p.draw = () => {
+    if (selectionState.isActive) {
+      return
+    }
+
     if (selectedIndex !== -1 && !dragging) {
       const area = textAreas[selectedIndex]
       handleMovementKeys(area)

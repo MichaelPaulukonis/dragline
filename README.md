@@ -74,7 +74,9 @@ Visit the printed URL (typically <http://localhost:5173>) and start rearranging 
 | Reset layout | `r` |
 | Fetch fresh Tumblr corpus | `n` |
 | Toggle info box | `i` or Escape |
-| Save monochrome snapshot | Shift + `S` |
+| Enter selection mode | Option/Alt + Shift + `S` |
+| Save crop while in selection mode | Shift + `S` or Enter |
+| Save full monochrome canvas | Shift + `S` (when selection mode is inactive) |
 
 ### Advanced Play
 
@@ -107,7 +109,8 @@ Dragline pulls posts using `GET https://api.tumblr.com/v2/blog/{blogName}/posts?
 ### What’s delightful right now
 
 - 🎲 **Generative scatter** – Every load throws text fragments into a unique constellation.
-- 🖱️ **Direct manipulation** – Drag blocks, layer them, and watch characters compete for canvas space.
+- � **Grid-snapped crops** – Define a reusable selection rectangle and export consistent captures.
+- �🖱️ **Direct manipulation** – Drag blocks, layer them, and watch characters compete for canvas space.
 - 🎚️ **On-the-fly remixing** – Cycle fill characters, reset layouts, or grab a high-contrast PNG snapshot.
 - 🔄 **Live corpora** – Pull fresh text from Tumblr or lean on bundled archives when offline.
 
@@ -167,6 +170,7 @@ src/
 ├─ dragline.js         # p5 orchestration: fetch, input, rendering
 ├─ blocks.js           # Block creation, positioning, z-indexing
 ├─ grid.js             # Character grid creation and rendering helpers
+├─ selection.js        # Grid-snapped selection state + overlay rendering
 ├─ tumblr-random.js    # Tumblr API integration + fallback logic
 └─ text-grid/          # Tokenize → gridify → split corpus
 css/
@@ -193,7 +197,7 @@ A: Probably not. Press `n` to fetch a new set of blocks or check the console for
 A: Absolutely. Point `blogName` in `src/tumblr-random.js` to another Tumblr blog or swap the fetch entirely for local files.
 
 **Q: How do I capture a composition without the pink gradient?**  
-A: Press Shift + `S` to save a monochrome PNG. For finer control, see the backlog idea “[Save Screen Export Options](docs/01_backlog/save-screen-export.md).”
+A: Press Shift + `S` for a full-canvas monochrome PNG. Need a specific crop? Press Option/Alt + Shift + `S` to enter selection mode, adjust the grid-snapped bounds, then confirm with Shift + `S` or Enter to export just that region.
 
 **Q: Where can I ask questions?**  
 A: Open a GitHub issue.
