@@ -20,6 +20,7 @@ import {
   handlePointerDragged as handleSelectionPointerDragged,
   handlePointerPressed as handleSelectionPointerPressed,
   handlePointerReleased as handleSelectionPointerReleased,
+  handleRatioPresetClick,
   nudgeSelection,
   renderSelectionOverlay
 } from './selection'
@@ -253,6 +254,12 @@ new p5(p => {
     }
 
     if (selectionState.isActive) {
+      // Check for ratio preset clicks first
+      if (handleRatioPresetClick(selectionState, p.mouseX, p.mouseY)) {
+        display()
+        return false
+      }
+      
       handleSelectionPointerPressed(selectionState, { x: p.mouseX, y: p.mouseY }, grid)
       display()
       return false

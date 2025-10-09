@@ -10,7 +10,19 @@ export const createSelectionState = grid => ({
   aspectRatio: 1,
   interaction: null,
   hoverHandle: null,
-  grid
+  grid,
+  activeRatio: null,
+  ratioPresets: [
+    { label: 'Free', width: null, height: null },
+    { label: '1:1', width: 1, height: 1 },
+    { label: '4:5', width: 4, height: 5 },
+    { label: '3:4', width: 3, height: 4 },
+    { label: '2:3', width: 2, height: 3 },
+    { label: '16:9', width: 16, height: 9 },
+    { label: '21:9', width: 21, height: 9 },
+    { label: '9:16', width: 9, height: 16 },
+    { label: '5:4', width: 5, height: 4 }
+  ]
 })
 
 export const enterSelectionMode = (state, grid) => {
@@ -20,6 +32,12 @@ export const enterSelectionMode = (state, grid) => {
     : createDefaultBounds(grid)
   state.bounds = ensureMinSize(state.bounds)
   state.bounds = clampBoundsToGrid(state.bounds, grid)
+  
+  // Apply active ratio if set
+  if (state.activeRatio) {
+    state.bounds = fitBoundsToRatio(state.bounds, state.activeRatio, grid)
+  }
+  
   state.isActive = true
   state.interaction = null
 }
@@ -76,6 +94,12 @@ export const handlePointerDragged = (state, pointer, grid) => {
 
   nextBounds = ensureMinSize(nextBounds)
   nextBounds = clampBoundsToGrid(nextBounds, grid)
+  
+  // Apply active ratio constraints
+  if (state.activeRatio) {
+    nextBounds = fitBoundsToRatio(nextBounds, state.activeRatio, grid)
+  }
+  
   state.bounds = nextBounds
   return true
 }
@@ -121,6 +145,7 @@ export const renderSelectionOverlay = (p, state, grid) => {
 
   drawHandles(p, x, y, width, height)
   drawDimensions(p, x, y, width, height, state.bounds)
+  drawRatioPresets(p, state)
 
   p.pop()
 }
@@ -410,3 +435,111 @@ const getBoundsCenter = bounds => ({
   x: bounds.x + bounds.w / 2,
   y: bounds.y + bounds.h / 2
 })
+
+const fitBoundsToRatio = (bounds, ratio, grid) => {
+  if (!ratio || (!ratio.width || !ratio.height)) {
+    return bounds // Freeform - no constraints
+  }
+
+  const targetRatio = ratio.width / ratio.height
+  const currentRatio = bounds.w / bounds.h
+
+  let newW, newH
+
+  if (currentRatio > targetRatio) {
+    // Too wide - expand height
+    newH = Math.round(bounds.w / targetRatio)
+    newW = bounds.w
+  } else {
+    // Too tall - expand width  
+    newW = Math.round(bounds.h * targetRatio)
+    newH = bounds.h
+  }
+
+  // Ensure we don't exceed grid boundaries
+  const maxX = grid.cols - newW
+  const maxY = grid.rows - newH
+  
+  let newX = Math.min(bounds.x, Math.max(0, maxX))
+  let newY = Math.min(bounds.y, Math.max(0, maxY))
+
+  // If still too large, shrink proportionally
+  if (newX < 0 || newY < 0 || newX + newW > grid.cols || newY + newH > grid.rows) {
+    const availableWidth = grid.cols - bounds.x
+    const availableHeight = grid.rows - bounds.y
+    const constrainedByWidth = availableWidth / ratio.width
+    const constrainedByHeight = availableHeight / ratio.height
+    const scale = Math.min(constrainedByWidth, constrainedByHeight)
+    
+    newW = Math.max(MIN_SIZE, Math.floor(ratio.width * scale))
+    newH = Math.max(MIN_SIZE, Math.floor(ratio.height * scale))
+  }
+
+  return { x: newX, y: newY, w: newW, h: newH }
+}
+
+const drawRatioPresets = (p, state) => {
+  const buttonWidth = 45
+  const buttonHeight = 24
+  const margin = 8
+  const startX = 20
+  const startY = 20
+  
+  p.push()
+  p.textAlign(p.CENTER, p.CENTER)
+  p.textSize(11)
+  
+  state.ratioPresets.forEach((ratio, index) => {
+    const x = startX + (index % 3) * (buttonWidth + margin)
+    const y = startY + Math.floor(index / 3) * (buttonHeight + margin)
+    
+    const isActive = state.activeRatio === ratio
+    
+    // Button background
+    p.fill(isActive ? 100 : 40, 150)
+    p.stroke(isActive ? 255 : 180)
+    p.strokeWeight(1)
+    p.rect(x, y, buttonWidth, buttonHeight, 4)
+    
+    // Button text
+    p.fill(255)
+    p.noStroke()
+    p.text(ratio.label, x + buttonWidth / 2, y + buttonHeight / 2)
+  })
+  
+  p.pop()
+}
+
+export const setActiveRatio = (state, ratioIndex) => {
+  const ratio = state.ratioPresets[ratioIndex] || null
+  state.activeRatio = ratio
+  
+  if (ratio && state.isActive && state.bounds) {
+    // Apply ratio to current bounds
+    state.bounds = fitBoundsToRatio(state.bounds, ratio, state.grid)
+    state.lastBounds = { ...state.bounds }
+  }
+}
+
+export const handleRatioPresetClick = (state, mouseX, mouseY) => {
+  if (!state.isActive) return false
+  
+  const buttonWidth = 45
+  const buttonHeight = 24
+  const margin = 8
+  const startX = 20
+  const startY = 20
+  
+  for (let i = 0; i < state.ratioPresets.length; i++) {
+    const x = startX + (i % 3) * (buttonWidth + margin)
+    const y = startY + Math.floor(i / 3) * (buttonHeight + margin)
+    
+    if (mouseX >= x && mouseX <= x + buttonWidth && 
+        mouseY >= y && mouseY <= y + buttonHeight) {
+      setActiveRatio(state, i)
+      return true // Click was handled
+    }
+  }
+  
+  return false // Click was not on any preset button
+}

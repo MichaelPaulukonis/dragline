@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>d r a g l i n e</title>
   </head>
@@ -14,17 +14,32 @@
       <h3>a different kind of text landscape</h3>
       <ul>
         <li><strong>Mouse:</strong> Click and drag to move text blocks.</li>
-        <li><strong>Arrow Keys:</strong> Move selected block.</li>
-        <li><strong>SHIFT + Up/Down:</strong> Change block z-index (move up or down).</li>
-        <li><strong>SHIFT + Left/Right:</strong> Cycle through blocks.</li>
-        <li><strong>SPACE:</strong> Cycle through fill characters.</li>
-        <li><strong>r:</strong> Reset text areas.</li>
+        <li><strong>Arrow Keys:</strong> Move the currently selected block.</li>
+        <li><strong>SHIFT + Up/Down:</strong> Change the selected block's z-index.</li>
+        <li><strong>SHIFT + Left/Right:</strong> Cycle which block is selected.</li>
         <li>
-          <strong>SHIFT + S:</strong> Save a black-and-white copy of the canvas
-          as <code>dragline.YYYYMMDD.hhmmss.png</code>.
+          <strong>SHIFT + ALT + S:</strong> Enter selection mode to crop a
+          region of the canvas.
+          <ul>
+            <li><strong>Arrow Keys:</strong> Nudge the selection; hold SHIFT to move two cells.</li>
+            <li><strong>ENTER or SHIFT + S:</strong> Save the cropped selection.</li>
+            <li><strong>ESC:</strong> Exit selection mode without saving.</li>
+          </ul>
         </li>
+        <li>
+          <strong>SHIFT + S:</strong> Save a black-and-white copy of the entire
+          canvas as <code>dragline.YYYYMMDD.hhmmss.png</code>.
+        </li>
+        <li><strong>SPACE:</strong> Cycle through fill characters.</li>
+        <li><strong>DELETE / BACKSPACE:</strong> Remove the selected block (if more than one remains).</li>
+        <li><strong>RIGHT Arrow (no block selected):</strong> Add a new block.</li>
+        <li><strong>LEFT Arrow (no block selected):</strong> Remove the most recent block.</li>
+        <li><strong>r:</strong> Reset text areas.</li>
         <li><strong>n:</strong> Fetch new blocks from Tumblr.</li>
-        <li><strong>i or ESC:</strong> Toggle this info box.</li>
+        <li>
+          <strong>i:</strong> Toggle this info box. <strong>ESC:</strong> Deselects
+          blocks or exits selection mode, and toggles this box when nothing is selected.
+        </li>
       </ul>
       <p>
         Check out the code at
